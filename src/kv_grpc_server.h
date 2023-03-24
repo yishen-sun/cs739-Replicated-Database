@@ -62,3 +62,5 @@ class GRPC_Server final : public Raft::Service {
    private:
       KeyValueStore inmem_store;
 };
+
+void RunServer(std::string address);

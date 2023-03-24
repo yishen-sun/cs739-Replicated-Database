@@ -1,6 +1,5 @@
 #include "./kv_grpc_server.h"
 
-
 namespace fs = std::filesystem;
 using namespace std;
 using namespace raft;
@@ -392,18 +391,3 @@ void RunServer(std::string address) {
     server->Wait();
 }
 
-int main(int argc, char** argv) {
-    struct stat info;
-
-    // set defaults
-    const std::string address("0.0.0.0:50051");
-    
-    // set configs from arguments
-    // if (argc == 2) serverDirectory = argv[1];
-
-    // std::cout << "serverDirectory: " << serverDirectory << std::endl;
-
-    RunServer(address);
-
-    return 0;
-}

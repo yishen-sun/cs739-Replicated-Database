@@ -50,10 +50,12 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 # Modify names for the source code
 foreach(_target
-  kv_grpc_client)
+  cli_client)
   add_executable(${_target} "${_target}.cpp"
     ${hw_proto_srcs}
-    ${hw_grpc_srcs})
+    ${hw_grpc_srcs}
+    kv_grpc_client.h
+    kv_grpc_client.cpp)
   target_link_libraries(${_target}
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
@@ -64,10 +66,12 @@ endforeach()
 
 # Modify names for the source code
 foreach(_target
-    kv_grpc_server)
+    server)
   add_executable(${_target} "${_target}.cpp"
     ${hw_proto_srcs}
     ${hw_grpc_srcs}
+    kv_grpc_server.h
+    kv_grpc_server.cpp
     key_value_store.hpp
     key_value_store.cpp)
   target_link_libraries(${_target}

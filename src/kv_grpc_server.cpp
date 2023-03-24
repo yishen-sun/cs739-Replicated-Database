@@ -1,12 +1,11 @@
-#include "./grpc_server.h"
+#include "./kv_grpc_server.h"
 
-// namespace fs = std::filesystem;
+
+namespace fs = std::filesystem;
 using namespace std;
-using namespace afs;
-using termcolor::reset, termcolor::yellow, termcolor::red, termcolor::blue,
-    termcolor::cyan;
+using namespace raft;
 
-using afs::WiscAFS;
+using raft::Raft;
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -14,12 +13,26 @@ using grpc::ServerReader;
 using grpc::ServerWriter;
 using grpc::Status;  // https://grpc.github.io/grpc/core/md_doc_statuscodes.html
 
-static std::string serverDirectory;
-
-// local cache clock
-static std::unordered_map<std::string, int> serverclock;
-
 /** mimics `stat`/`lstat` functionality */
+
+Status GRPC_Server::Put(ServerContext* context, const PutRequest* request, PutResponse* response){
+    std::cout << "GPRC_Server::put" << std::endl;
+    std::string k(request->key());
+    std::string v(request->value());
+    inmem_store.Put(k, v);
+    response->set_success(0);
+    return Status::OK;
+}
+
+
+Status GRPC_Server::Get(ServerContext* context, const GetRequest* request, GetResponse* response){
+    std::cout << "GPRC_Server::get" << std::endl;
+    std::string v(inmem_store.Get(request->key()));
+    response->set_success(0);
+    response->set_value(v);
+    return Status::OK;
+}
+
 // Status GRPC_Server::getFileAttributes(ServerContext* context, const Path*
 // request, Attributes* response) {
 //   //std::cout << yellow << "GRPC_Server::getFileAttributes" << reset <<
@@ -373,8 +386,6 @@ void RunServer(std::string address) {
     builder.RegisterService(&service);
     // Finally assemble the server.
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    std::cout << termcolor::blue << "⚡ Server listening on " << address
-              << termcolor::reset << std::endl;
 
     // Wait for the server to shutdown. Note that some other thread must be
     // responsible for shutting down the server for this call to ever return.
@@ -386,17 +397,11 @@ int main(int argc, char** argv) {
 
     // set defaults
     const std::string address("0.0.0.0:50051");
-    serverDirectory = Utility::concatenatePath(
-        fs::current_path().generic_string(), "tmp/server");
-
+    
     // set configs from arguments
-    if (argc == 2) serverDirectory = argv[1];
+    // if (argc == 2) serverDirectory = argv[1];
 
-    // create directory if doesn't exist
-    serverDirectory = fs::absolute(serverDirectory);
-    fs::create_directories(serverDirectory);
-    std::cout << blue << "serverDirectory: " << serverDirectory << reset
-              << std::endl;
+    // std::cout << "serverDirectory: " << serverDirectory << std::endl;
 
     RunServer(address);
 

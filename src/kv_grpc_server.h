@@ -17,24 +17,25 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <termcolor/termcolor.hpp>
 #include <vector>
 
-#include "Utility.cpp"
-#include "afs.grpc.pb.h"
+#include "raft.grpc.pb.h"
+#include "./key_value_store.hpp"
 
 #define CHUNK_SIZE 1572864
 
 namespace fs = std::filesystem;
 using namespace std;
 using namespace grpc;
-using namespace afs;
-using termcolor::reset, termcolor::yellow, termcolor::red, termcolor::blue,
-    termcolor::cyan;
+using namespace raft;
 
 // Logic and data behind the server's behavior.
-class GRPC_Server final : public WiscAFS::Service {
+class GRPC_Server final : public Raft::Service {
    public:
+   //  rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse);
+   //  rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse);
+    Status Put(ServerContext* context, const PutRequest* request, PutResponse* response) override;
+    Status Get(ServerContext* context, const GetRequest* request, GetResponse* response) override;
     // Status readDirectory(ServerContext* context, const Path* request,
     //                      ServerWriter<afs::ReadDirResponse>* writer)
     //                      override;
@@ -58,4 +59,6 @@ class GRPC_Server final : public WiscAFS::Service {
     //                        WriteReply* reply) override;
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
+   private:
+      KeyValueStore inmem_store;
 };

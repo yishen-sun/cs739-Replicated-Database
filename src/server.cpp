@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 #include "./kv_grpc_server.h"
 
 using namespace std;
+=======
+#include <thread>
+>>>>>>> bfbe7f7 (basic skeleton 1)
 
 int main(int argc, char** argv) {
 

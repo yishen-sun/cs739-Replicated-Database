@@ -1,5 +1,6 @@
-#include <thread>
+#include "./kv_grpc_server.h"
 
+using namespace std;
 int main(int argc, char** argv) {
     // set defaults
     const std::string address("0.0.0.0:50051");

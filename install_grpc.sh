@@ -7,7 +7,10 @@ sudo apt-get remove cmake
 wget -q -O cmake-linux.sh https://github.com/Kitware/CMake/releases/download/v3.19.6/cmake-3.19.6-Linux-x86_64.sh
 sh cmake-linux.sh -- --skip-license --prefix=$MY_INSTALL_DIR
 rm cmake-linux.sh
-sudo apt install -y cmake
+
+sudo apt update -y
+sudo apt install -y build-essential autoconf libtool pkg-config libsystemd-dev 
+# sudo apt install -y cmake
 
 git clone --recurse-submodules -b v1.52.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
 

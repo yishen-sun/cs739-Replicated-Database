@@ -1,4 +1,4 @@
-#include "key_value_store.hpp"
+#include "key_value_store.h"
 
 KeyValueStore global_store;
 

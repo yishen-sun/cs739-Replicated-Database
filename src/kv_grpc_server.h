@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "./key_value_store.h"
 #include "raft.grpc.pb.h"
-#include "./key_value_store.hpp"
 
 #define CHUNK_SIZE 1572864
 
@@ -32,10 +32,13 @@ using namespace raft;
 // Logic and data behind the server's behavior.
 class GRPC_Server final : public Raft::Service {
    public:
-   //  rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse);
-   //  rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse);
-    Status Put(ServerContext* context, const PutRequest* request, PutResponse* response) override;
-    Status Get(ServerContext* context, const GetRequest* request, GetResponse* response) override;
+    //  rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse);
+    //  rpc AppendEntries (AppendEntriesRequest) returns
+    //  (AppendEntriesResponse);
+    Status Put(ServerContext* context, const PutRequest* request,
+               PutResponse* response) override;
+    Status Get(ServerContext* context, const GetRequest* request,
+               GetResponse* response) override;
     // Status readDirectory(ServerContext* context, const Path* request,
     //                      ServerWriter<afs::ReadDirResponse>* writer)
     //                      override;
@@ -59,8 +62,9 @@ class GRPC_Server final : public Raft::Service {
     //                        WriteReply* reply) override;
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
+
    private:
-      KeyValueStore inmem_store;
+    KeyValueStore inmem_store;
 };
 
 void RunServer(std::string address);

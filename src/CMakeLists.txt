@@ -72,7 +72,7 @@ foreach(_target
     ${hw_grpc_srcs}
     kv_grpc_server.h
     kv_grpc_server.cpp
-    key_value_store.hpp
+    key_value_store.h
     key_value_store.cpp)
   target_link_libraries(${_target}
     ${_REFLECTION}

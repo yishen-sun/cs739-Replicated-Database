@@ -1,16 +1,22 @@
 #include "./kv_grpc_server.h"
 
 using namespace std;
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
 int main(int argc, char** argv) {
     // set defaults
-    const std::string address("0.0.0.0:50051");
-
+   
+    
     // set configs from arguments
-    // if (argc == 2) serverDirectory = argv[1];
+    if (argc != 3)  {
+        std::cout << "Usage ./server <name> <address>" << std::endl;
+        return 0;
+    }
 
-    // std::cout << "serverDirectory: " << serverDirectory << std::endl;
-
-    RunServer(address);
+    // RunServer(argv[1], argv[2]);
 
     return 0;
 }

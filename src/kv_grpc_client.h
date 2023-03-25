@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include "raft.grpc.pb.h"
+#include "log.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -24,7 +25,7 @@ class KeyValueStoreClient {
     bool Put(const std::string& key, const std::string& value);
 
     bool Get(const std::string& key, std::string& result);
-
+   
     std::string SayHello(const std::string& user);
 
    private:

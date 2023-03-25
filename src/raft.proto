@@ -5,8 +5,6 @@ package raft;
 service Raft {
     rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse) {};
     rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse) {};
-    rpc Put (PutRequest) returns (PutResponse) {};
-    rpc Get (GetRequest) returns (GetResponse) {};
 
     // example api
     rpc SayHello(HelloRequest) returns (HelloReply) {};
@@ -43,26 +41,6 @@ message AppendEntriesRequest {
 message AppendEntriesResponse {
     uint64 term = 1;
     bool success = 2;
-}
-
-message PutRequest {
-    string key = 1;
-    string value = 2;
-}
-
-message PutResponse {
-    bool success = 1;
-    string master_addr = 2;
-}
-
-message GetRequest {
-    string key = 1;
-}
-
-message GetResponse {
-    bool success = 1;
-    string master_addr = 2;
-    string value = 3;
 }
 
 message HelloRequest {

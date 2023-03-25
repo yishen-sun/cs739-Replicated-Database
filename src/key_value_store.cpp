@@ -14,3 +14,11 @@ std::string KeyValueStore::Get(const std::string& key) {
     }
     return "";
 }
+
+bool::KeyValueStore::Delete(const std::string& key) {
+    if (Get(key) != "") {
+        store_.erase(key);
+        return true;
+    }
+    return false;
+}

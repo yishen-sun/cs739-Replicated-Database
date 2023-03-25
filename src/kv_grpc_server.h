@@ -21,6 +21,9 @@
 
 #include "./key_value_store.h"
 #include "raft.grpc.pb.h"
+#include "./key_value_store.hpp"
+#include "./log.hpp"
+#include "./kv_grpc_client.h"
 
 #define CHUNK_SIZE 1572864
 
@@ -30,41 +33,17 @@ using namespace grpc;
 using namespace raft;
 
 // Logic and data behind the server's behavior.
-class GRPC_Server final : public Raft::Service {
+class KeyValueStoreServer final : public Raft::Service {
    public:
-    //  rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse);
-    //  rpc AppendEntries (AppendEntriesRequest) returns
-    //  (AppendEntriesResponse);
-    Status Put(ServerContext* context, const PutRequest* request,
-               PutResponse* response) override;
-    Status Get(ServerContext* context, const GetRequest* request,
-               GetResponse* response) override;
-    // Status readDirectory(ServerContext* context, const Path* request,
-    //                      ServerWriter<afs::ReadDirResponse>* writer)
-    //                      override;
-    // Status createDirectory(ServerContext* context, const MkDirRequest*
-    // request,
-    //                        Response* response) override;
-    // Status removeDirectory(ServerContext* context, const Path* request,
-    //                        Response* response) override;
-    // Status removeFile(ServerContext* context, const Path* request,
-    //                   Response* response) override;
-    // Status getFileAttributes(ServerContext* context, const Path* request,
-    //                          /*char* string*/ Attributes* response) override;
-    // Status createEmptyFile(ServerContext* context, const OpenRequest*
-    // request,
-    //                        OpenResponse* response) override;
-    // Status getFileContents(ServerContext* context, const ReadRequest*
-    // request,
-    //                        ServerWriter<ReadReply>* writer) override;
-    // Status putFileContents(ServerContext* context,
-    //                        ServerReader<WriteRequest>* reader,
-    //                        WriteReply* reply) override;
+    Status Put(ServerContext* context, const PutRequest* request, PutResponse* response) override;
+
+    Status Get(ServerContext* context, const GetRequest* request, GetResponse* response) override;
+   
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
-
    private:
-    KeyValueStore inmem_store;
+      std::shared_ptr<int> identity;
+      std::shared_ptr<KeyValueStore> server_config;
+      // std::shared_ptr<Vector<raft_client>> raft_clients;   // grpc client to send raft info to other server.
 };
 
-void RunServer(std::string address);

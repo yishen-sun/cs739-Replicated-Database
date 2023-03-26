@@ -24,14 +24,14 @@ set(_GRPC_GRPCPP gRPC::grpc++)
 set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
 
 # Proto file
-get_filename_component(hw_proto "raft.proto" ABSOLUTE)
+get_filename_component(hw_proto "kvraft.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 # Generated sources
-set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/raft.pb.cc")
-set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/raft.pb.h")
-set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/raft.grpc.pb.cc")
-set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/raft.grpc.pb.h")
+set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/kvraft.pb.cc")
+set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kvraft.pb.h")
+set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/kvraft.grpc.pb.cc")
+set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kvraft.grpc.pb.h")
 add_custom_command(
       OUTPUT "${hw_proto_srcs}" "${hw_proto_hdrs}" "${hw_grpc_srcs}" "${hw_grpc_hdrs}"
       COMMAND ${_PROTOBUF_PROTOC}
@@ -70,16 +70,10 @@ foreach(_target
   add_executable(${_target} "${_target}.cpp"
     ${hw_proto_srcs}
     ${hw_grpc_srcs}
-    kv_grpc_server.h
-    kv_grpc_server.cpp
+    kvraft_grpc_server.h
+    kvraft_grpc_server.cpp
     key_value_store.h
     key_value_store.cpp
-    raft_server.hpp
-    raft_server.cpp
-    raft_grpc_server.hpp
-    raft_grpc_server.cpp
-    raft_grpc_client.hpp
-    raft_grpc_client.cpp
     log.hpp
     log.cpp)
   target_link_libraries(${_target}

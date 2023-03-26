@@ -18,7 +18,9 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <chrono>
 #include <vector>
+#include <thread>
 
 #include "./key_value_store.h"
 #include "./log.hpp"
@@ -29,6 +31,10 @@ using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
+using grpc::ServerReader;
+using grpc::ServerWriter;
+using grpc::ClientContext;
+
 using kvraft::AppendEntriesRequest;
 using kvraft::AppendEntriesResponse;
 using kvraft::RequestVoteRequest;
@@ -37,17 +43,20 @@ using kvraft::RequestVoteResponse;
 using namespace std;
 using namespace grpc;
 using namespace kvraft;
+using namespace std::chrono_literals;
 
 enum Role { LEADER, FOLLOWER, CANDIDATE };
+auto HEARTBEAT_INTERVAL = 50ms;
 
 class KVRaftServer final : public KVRaft::Service {
    public:
-    // Constructor, destructor, and other member functions for the Raft node.
+    // Constructor
     KVRaftServer();
 
-    Status RequestVote(ServerContext* context,
-                       const RequestVoteRequest* request,
-                       RequestVoteResponse* response) override;
+    // grpc server part
+    // Status RequestVote(ServerContext* context,
+    //                    const RequestVoteRequest* request,
+    //                    RequestVoteResponse* response) override;
 
     Status AppendEntries(ServerContext* context,
                          const AppendEntriesRequest* request,
@@ -62,9 +71,43 @@ class KVRaftServer final : public KVRaft::Service {
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
 
+    // grpc client part
+    // bool ClientRequestVote(const int candidate_id, const int last_log_index, const int last_log_term);
+
+    bool ClientAppendEntries(std::string receive_addr, Log log_entries, bool is_heartbeat, int prev_log_index, int prev_log_term, int commit_index);
+
+    std::string ClientSayHello(const std::string& user);
+
    private:
-    shared_ptr<Role> identity;
-    // shared_ptr<KeyValueStore> server_config; //{XXX: 0.0.0.0:50001};
-    shared_ptr<vector<RaftClient>>
-        raft_clients;  // grpc client to send raft info to other server.
+    Role identity;
+    
+    KeyValueStore kv_store;
+    unordered_map<std::string, std::unique_ptr<Raft::Stub>> raft_client_stubs_; // k = addr:port, v = stub_
+    KeyValueStore server_config; // k = name A, v = addr:port 0.0.0.0:50001
+
+    string config_path;
+    string name;
+    string addr;
+    // Timeout
+    std::chrono::time_point<std::chrono::high_resolution_clock> curr_time;
+    // persistent state on servers
+    int term;
+    int leader_id;
+    Log logs;
+
+    // volatile state on servers
+    int commit_index;
+    int last_applied;
+
+    // volatile state on leaders
+    unordered_map<std::string, int> next_index; // unordered_map<std::string addr:port , int index of next log send to that server>
+                                                // for each server, index of the next log entry to send to that server (initialized to leader last log index + 1)
+
+    unordered_map<std::string, int> match_index; // unordered_map<std::string addr:port , int index of next log send to that server>
+                                                // for each server, index of highest log entry known to be replicated on server (initialized to 0, increases monotonically)
+    
+    
+    bool read_server_config();
+    bool send_heartbeat();
+    bool update_stubs_();
 };

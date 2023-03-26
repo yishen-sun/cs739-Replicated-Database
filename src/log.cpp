@@ -33,3 +33,30 @@ std::string Log::getByIndex(const int index) {
     }
     return store_[index];
 }
+
+int Log::getTermByIndex(const int index) {
+    if ((index > max_index) && (index < 0)) {
+        return -1;
+    }
+    std::string term_command = store_[index];
+    size_t pos = term_command.find('_');
+    if (pos != std::string::npos) {
+        std::string term = term_command.substr(0, pos);
+        std::string value = term_command.substr(pos + 1, term_command.size() - pos - 1);
+        return std::stoi(term);
+    }
+    return -1;
+}
+
+std::string Log::getCommandByIndex(const int index) {
+    if ((index > max_index) && (index < 0)) {
+        return "invalidLog";
+    }
+    std::string term_command = store_[index];
+    size_t pos = term_command.find('_');
+    if (pos != std::string::npos) {
+        std::string command = term_command.substr(pos + 1, term_command.size() - pos - 1);
+        return command;
+    }
+    return "invalidLog";
+}

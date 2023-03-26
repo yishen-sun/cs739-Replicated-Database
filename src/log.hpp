@@ -10,8 +10,11 @@ class Log {
     bool removeAfterIndex(const int index);
     std::string getByIndex(const int index);
     int getMaxIndex();
+    int getTermByIndex(const int index);
+    std::string getCommandByIndex(const int index);
    private:
-    std::unordered_map<int, std::string> store_;
+    // TODO: unordered_map<int, pair<int,string>>
+    std::unordered_map<int, std::string> store_; 
     int max_index;
 };
 

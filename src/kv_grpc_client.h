@@ -4,19 +4,19 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "raft.grpc.pb.h"
+#include "kvraft.grpc.pb.h"
 #include "log.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
-using raft::Raft;
-using raft::GetRequest;
-using raft::GetResponse;
-using raft::PutRequest;
-using raft::PutResponse;
-using raft::HelloRequest;
-using raft::HelloReply;
+using kvraft::KVRaft;
+using kvraft::GetRequest;
+using kvraft::GetResponse;
+using kvraft::PutRequest;
+using kvraft::PutResponse;
+using kvraft::HelloRequest;
+using kvraft::HelloReply;
 
 class KeyValueStoreClient {
    public:
@@ -29,6 +29,6 @@ class KeyValueStoreClient {
     std::string SayHello(const std::string& user);
 
    private:
-    std::unique_ptr<Raft::Stub> stub_;
+    std::unique_ptr<KVRaft::Stub> stub_;
 };
 

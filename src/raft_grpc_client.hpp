@@ -24,16 +24,23 @@
 
 #define CHUNK_SIZE 1572864
 
-namespace fs = std::filesystem;
+// namespace fs = std::filesystem;
 using namespace std;
 using namespace grpc;
 using namespace raft;
+using grpc::Channel;
+using grpc::ClientAsyncResponseReader;
+using grpc::ClientContext;
+using grpc::CompletionQueue;
+using grpc::Status;
 using raft::HelloRequest;
 using raft::HelloReply;
 
 // Logic and data behind the server's behavior.
 class RaftClient final : public Raft::Service {
    public:
+   explicit RaftClient(std::shared_ptr<Channel> channel)
+      : stub_(Raft::NewStub(channel)) {}
     // rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse);
     bool RequestVote(const int term, const int candidate_id, const int last_log_index, const int last_log_term);
 

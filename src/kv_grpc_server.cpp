@@ -14,12 +14,34 @@ using grpc::Status;  // https://grpc.github.io/grpc/core/md_doc_statuscodes.html
 
 /** mimics `stat`/`lstat` functionality */
 
+KeyValueStoreServer::KeyValueStoreServer(shared_ptr<Role> identity, shared_ptr<vector<RaftClient>> raft_clients):identity(identity), raft_client(raft_client) {
+    cout << "KeyValueStoreServer constructor - identity: " << *identity << endl;
+}
+  
 Status KeyValueStoreServer::Put(ServerContext* context, const PutRequest* request, PutResponse* response){
-    std::cout << "GPRC_Server::put" << std::endl;
+    std::cout << "KeyValueStoreServer::put" << std::endl;
     std::string k(request->key());
     std::string v(request->value());
+    if (*identity == Role::LEADER) {
+        int cnt = 0;
+        for (auto client : *raft_clients) {
+            bool ret = client.appendEntries(/* todo */);
+            cnt += ret;
+        }
+        if (cnt >= /*majority*/) {
+            return /*ok*/
+        } else {
+            return /*not ok*/
+        }
+        
+
+    } else {
+        // todo return leader's address
+    }
+
     inmem_store.Put(k, v);
     response->set_success(0);
+    
     return Status::OK;
 }
 

@@ -24,26 +24,31 @@
 #include "./key_value_store.hpp"
 #include "./log.hpp"
 #include "./kv_grpc_client.h"
+#include "./raft_grpc_client.hpp"
 
 #define CHUNK_SIZE 1572864
 
-namespace fs = std::filesystem;
+// namespace fs = std::filesystem;
 using namespace std;
 using namespace grpc;
 using namespace raft;
-
+enum Role {LEADER, FOLLOWER, CANDIDATE};
 // Logic and data behind the server's behavior.
 class KeyValueStoreServer final : public Raft::Service {
-   public:
+public:
+   
+   KeyValueStoreServer(shared_ptr<Role> identity, shared_ptr<KeyValueStore> server_config);
     Status Put(ServerContext* context, const PutRequest* request, PutResponse* response) override;
 
     Status Get(ServerContext* context, const GetRequest* request, GetResponse* response) override;
    
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
-   private:
-      std::shared_ptr<int> identity;
-      std::shared_ptr<KeyValueStore> server_config;
-      // std::shared_ptr<Vector<raft_client>> raft_clients;   // grpc client to send raft info to other server.
+private:
+      
+      shared_ptr<Role> identity;
+      // shared_ptr<KeyValueStore> server_config; //{XXX: 0.0.0.0:50001}; 
+      shared_ptr<vector<RaftClient>> raft_clients;   // grpc client to send raft info to other server.
+
 };
 

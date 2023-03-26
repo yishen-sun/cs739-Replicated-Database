@@ -21,29 +21,26 @@
 #include <vector>
 
 #include "./key_value_store.h"
-#include "./key_value_store.hpp"
-#include "./kv_grpc_client.h"
 #include "./log.hpp"
 #include "./raft_grpc_client.hpp"
-#include "raft.grpc.pb.h"
+#include "kvraft.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
-using raft::AppendEntriesRequest;
-using raft::AppendEntriesResponse;
-using raft::Raft;
-using raft::RequestVoteRequest;
-using raft::RequestVoteResponse;
+using kvraft::AppendEntriesRequest;
+using kvraft::AppendEntriesResponse;
+using kvraft::RequestVoteRequest;
+using kvraft::RequestVoteResponse;
 
-#define CHUNK_SIZE 1572864
 using namespace std;
 using namespace grpc;
-using namespace raft;
+using namespace kvraft;
+
 enum Role { LEADER, FOLLOWER, CANDIDATE };
 
-class KVRaftServer : public KVRaft::Service {
+class KVRaftServer final : public KVRaft::Service {
    public:
     // Constructor, destructor, and other member functions for the Raft node.
     KVRaftServer();

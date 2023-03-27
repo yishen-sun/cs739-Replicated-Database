@@ -76,11 +76,14 @@ class KVRaftServer final : public KVRaft::Service {
     // bool ClientRequestVote(const int candidate_id, const int last_log_index,
     // const int last_log_term);
 
-    bool ClientAppendEntries(std::string receive_addr, Log log_entries,
+    bool ClientAppendEntries(unique_ptr<KVRaft::Stub> stub_, Log log_entries,
                              bool is_heartbeat, int prev_log_index,
-                             int prev_log_term, int commit_index);
+                             int prev_log_term, int commit_index, int term);
 
     std::string ClientSayHello(const std::string& user);
+
+    // server function
+    void send_append_entries(bool is_heartbeat);
 
    private:
     Role identity;
@@ -112,9 +115,8 @@ class KVRaftServer final : public KVRaft::Service {
                      // leader last log index + 1)
 
     unordered_map<std::string, int>
-        match_index;  // unordered_map<std::string addr:port , int index of next
-                      // log send to that server> for each server, index of
-                      // highest log entry known to be replicated on server
+        match_index;  // unordered_map<std::string addr:port , for each server, 
+                      // index of highest log entry known to be replicated on server
                       // (initialized to 0, increases monotonically)
 
     bool read_server_config();

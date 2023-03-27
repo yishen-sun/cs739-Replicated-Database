@@ -60,3 +60,14 @@ std::string Log::getCommandByIndex(const int index) {
     }
     return "invalidLog";
 }
+
+std::string Log::transferCommand(const std::string& behavior,const std::string& key, const std::string& value) {
+    if (behavior == "Put") {
+        return std::string("P@K=" + key + "@V=" + value);
+    }
+    else if (behavior == "Get") {
+        return std::string("G@K=" + key);
+    } else {
+        return ""
+    }
+}

@@ -93,18 +93,23 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request,
     std::string k(request->key());
     std::string v(request->value());
     if (identity == Role::LEADER) {
-        int cnt = 0;
-        for (const auto& pair : raft_client_stubs_) {
-            const std::string& name = pair.first;
-            const std::string& stub_ = pair.second;
-            bool ret = stub_->ClientAppendEntries(/* todo */);
-            cnt += ret;
-        }
-        if (cnt >= /*majority*/) {
-            return /*ok*/
-        } else {
-            return /*not ok*/
-        }
+        // int cnt = 0;
+        // for (const auto& pair : raft_client_stubs_) {
+        //     const std::string& name = pair.first;
+        //     const std::string& stub_ = pair.second;
+        //     bool ret = stub_->ClientAppendEntries(/* todo */);
+        //     cnt += ret;
+        // }
+        // if (cnt >= /*majority*/) {
+        //     return /*ok*/
+        // } else {
+        //     return /*not ok*/
+        // }
+
+        // If command received from client: append entry to local log, respond after entry applied to state machine
+        // applied to local log
+        logs.put(logs.getMaxIndex() + 1, to_string(term) + "_" + transferCommand("Put", k, v));
+        send_append_entries(false);
 
     } else {
         // todo return leader's address
@@ -183,27 +188,17 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     return Status::OK;
 }
 
-// // create an AppendEntriesRequest object and set the fields
-// AppendEntriesRequest request;
-// request.set_term(1);
-// request.set_leader_id(1);
-// request.set_prev_log_index(0);
-// request.set_prev_log_term(0);
-// for (const auto& log : logs) {
-//     *(request.add_entries()) = log;
-// }
-// request.set_leader_commit(0);
 
 // -------------------------------------------------------------------------------------------------
 // GRPC Client API
-bool ClientAppendEntries(std::string receive_addr, Log log_entries,
+bool KVRaftServer::ClientAppendEntries(unique_ptr<KVRaft::Stub> stub_ , Log log_entries,
                          bool is_heartbeat, int prev_log_index,
-                         int prev_log_term, int commit_index) {
+                         int prev_log_term, int commit_index, int term) {
     AppendEntriesRequest request;
     AppendEntriesResponse response;
     Status status;
     ClientContext context;
-    unique_ptr<KVRaft::Stub> stub_ = raft_client_stubs_[receive_addr];
+
 
     if (is_heartbeat) {
         status = stub_->AppendEntries(&context, request, &response);
@@ -219,26 +214,66 @@ bool ClientAppendEntries(std::string receive_addr, Log log_entries,
     request->set_heartbeat(false);
 
     LogEntry log;
-    vector<LogEntry> logs;
+    vector<LogEntry> sent_logs;
 
     log.set_index(i);
     log.set_term(log_entries.getTermByIndex(i));
     log.set_command(log_entries.getCommandByIndex(i));
-    logs.push_back(log);
-    *(request.add_entries()) = log;
+    sent_logs.push_back(log);
+    for (const auto& log : sent_logs) {
+        *(request.add_entries()) = log;
+    }
 
     status = stub_->AppendEntries(&context, request, &response);
     if (status.ok()) {
         if (response.term() > term) {
             term = response.term();
-            return ClientAppendEntries(log_entries, is_heartbeat,
-                                       prev_log_index, prev_log_term);
+            return ClientAppendEntries(stub_, log_entries, is_heartbeat,
+                                       prev_log_index, prev_log_term, term);
         }
         // resend logic should be handled by caller.
         return response.success();
     }
     return false;
 }
+
+// Server function API
+
+void KVRaftServer::send_append_entries(bool is_heartbeat) {
+    int check_majority = 0;
+    for (const auto& pair : raft_client_stubs_) {
+        const std::string& cur_server = pair.first;
+        const std::string& cur_stub_ = pair.second;
+        
+        if (is_heartbeat == true) {
+            ClientAppendEntries(cur_stub_, NULL, is_heartbeat, -1, -1, -1, term);
+        } else {
+            // If last log index ≥ nextIndex for a follower: send AppendEntries RPC with log entries starting at nextIndex
+            //   • If successful: update nextIndex and matchIndex for follower (§5.3)
+            //   • If AppendEntries fails because of log inconsistency: decrement nextIndex and retry (§5.3)
+            int cur_next_index;
+            while (logs.getMaxIndex() >= next_index[cur_server]) {
+                cur_next_index = next_index[cur_server];
+                if (ClientAppendEntries(cur_stub_, logs, is_heartbeat,
+                                       cur_next_index - 1, logs.getTermByIndex(cur_next_index - 1), term)) {
+                    next_index[cur_server] = cur_next_index;
+                    match_index[cur_server] = cur_next_index - 1;
+                } else {
+                    next_index[cur_server] -= 1;
+                }
+            }
+            
+        }
+        // TODO:
+        // check_majority += 1;
+        // if (check majority > 3/2) {
+        //     applied_commited
+            
+        // }
+    }
+}
+
+
 
 // -------------------------------------------------------------------------------------------------
 // EXAMPLE API

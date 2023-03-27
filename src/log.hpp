@@ -12,6 +12,7 @@ class Log {
     int getMaxIndex();
     int getTermByIndex(const int index);
     std::string getCommandByIndex(const int index);
+    std::string transferCommand(const std::string& behavior, const std::string& key, const std::string& value);
    private:
     // TODO: unordered_map<int, pair<int,string>>
     std::unordered_map<int, std::string> store_; 

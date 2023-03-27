@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 #include "kvraft.grpc.pb.h"
-#include "log.h"
+#include "log.hpp"
 
 using grpc::Channel;
 using grpc::ClientContext;

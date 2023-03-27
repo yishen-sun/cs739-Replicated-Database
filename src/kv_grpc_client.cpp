@@ -3,7 +3,7 @@
 std::string NO_MASTER_YET = "NO_MASTER";
 
 KeyValueStoreClient::KeyValueStoreClient(std::shared_ptr<Channel> channel)
-        : stub_(Raft::NewStub(channel)) {}
+        : stub_(KVRaft::NewStub(channel)) {}
 
 bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) {
     PutRequest request;
@@ -20,12 +20,14 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
             if (response.success() == 0) return true;
             if (response.master_addr() == NO_MASTER_YET) {
                 // sleep and retries
+                std::cout << "NO_MASTER_YET" << std::endl;
                 sleep(0.2);
             } else {
                 // update stub channel
+                std::cout << "update stub channel" << std::endl;
                 stub_.release();
                 std::string master_addr = response.master_addr();
-                stub_ = Raft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
+                stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
             }
         } else {
             return false;
@@ -50,12 +52,14 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
             }
             if (response.master_addr() == NO_MASTER_YET) {
                 // sleep and retries
+                std::cout << "NO_MASTER_YET" << std::endl;
                 sleep(0.2);
             } else {
                 // update stub channel
+                std::cout << "update stub channel" << std::endl;
                 stub_.release();
                 std::string master_addr = response.master_addr();
-                stub_ = Raft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
+                stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
             }
         } else {
             return false;

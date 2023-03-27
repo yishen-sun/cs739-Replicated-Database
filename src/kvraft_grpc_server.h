@@ -20,10 +20,10 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <random>
 
 #include "./key_value_store.h"
 #include "./log.hpp"
-#include "./raft_grpc_client.hpp"
 #include "kvraft.grpc.pb.h"
 
 using grpc::ClientContext;
@@ -45,13 +45,15 @@ using namespace kvraft;
 using namespace std::chrono_literals;
 
 enum Role { LEADER, FOLLOWER, CANDIDATE };
-auto HEARTBEAT_INTERVAL = 50ms;
-auto MIN_ELECTION_TIMEOUT = 150ms;
-auto MAX_ELECTION_TIMEOUT = 300ms;
+constexpr int HEARTBEAT_INTERVAL = 50;
+constexpr int MIN_ELECTION_TIMEOUT = 150;
+constexpr int MAX_ELECTION_TIMEOUT = 300;
+bool test_without_election = true;
 class KVRaftServer final : public KVRaft::Service {
    public:
     // Constructor
-    KVRaftServer();
+    KVRaftServer(std::string name, std::string addr,
+                           std::string config_path);
     //
     void RunServer();
     // grpc server part
@@ -76,28 +78,32 @@ class KVRaftServer final : public KVRaft::Service {
     // bool ClientRequestVote(const int candidate_id, const int last_log_index,
     // const int last_log_term);
 
-    bool ClientAppendEntries(unique_ptr<KVRaft::Stub> stub_, Log log_entries,
+    bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log log_entries,
                              bool is_heartbeat, int prev_log_index,
-                             int prev_log_term, int commit_index, int term);
+                             int prev_log_term, int commit_index, int msg_term);
 
     std::string ClientSayHello(const std::string& user);
-
+    // server thread
+    void server_loop();
     // server function
     void send_append_entries(bool is_heartbeat);
+    void start_election();
+
+    std::string applied_log();
 
    private:
     Role identity;
 
-    KeyValueStore kv_store;
-    unordered_map<std::string, std::unique_ptr<Raft::Stub>>
+    KeyValueStore state_machine_interface;
+    unordered_map<std::string, std::shared_ptr<KVRaft::Stub>>
         raft_client_stubs_;       // k = addr:port, v = stub_
-    KeyValueStore server_config;  // k = name A, v = addr:port 0.0.0.0:50001
+    unordered_map<std::string, std::string> server_config;  // k = name A, v = addr:port 0.0.0.0:50001
 
     string config_path;
     string name;
     string addr;
     // Timeout
-    std::chrono::time_point<std::chrono::high_resolution_clock> curr_time;
+    std::chrono::time_point<std::chrono::high_resolution_clock> last_receive_appendEntries_time;
     // persistent state on servers
     int term;       // currentTerm
     int leader_id;  // votedFor? currentLeader?
@@ -122,4 +128,8 @@ class KVRaftServer final : public KVRaft::Service {
     bool read_server_config();
     bool send_heartbeat();
     bool update_stubs_();
+    // heartbeats and election threads functions
+    void leader_heartbeat_loop();
+    int random_election_timeout();
+    void election_timer_loop();
 };

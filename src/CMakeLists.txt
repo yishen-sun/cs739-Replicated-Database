@@ -66,12 +66,11 @@ endforeach()
 
 # Modify names for the source code
 foreach(_target
-    server)
+  kvraft_grpc_server)
   add_executable(${_target} "${_target}.cpp"
     ${hw_proto_srcs}
     ${hw_grpc_srcs}
     kvraft_grpc_server.h
-    kvraft_grpc_server.cpp
     key_value_store.h
     key_value_store.cpp
     log.hpp

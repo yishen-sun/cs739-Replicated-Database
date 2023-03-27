@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -18,22 +19,20 @@
 #include <sstream>
 #include <string>
 #include <thread>
-#include <chrono>
 #include <vector>
-#include <thread>
 
 #include "./key_value_store.h"
 #include "./log.hpp"
 #include "./raft_grpc_client.hpp"
 #include "kvraft.grpc.pb.h"
 
+using grpc::ClientContext;
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
-using grpc::Status;
 using grpc::ServerReader;
 using grpc::ServerWriter;
-using grpc::ClientContext;
+using grpc::Status;
 
 using kvraft::AppendEntriesRequest;
 using kvraft::AppendEntriesResponse;
@@ -47,12 +46,14 @@ using namespace std::chrono_literals;
 
 enum Role { LEADER, FOLLOWER, CANDIDATE };
 auto HEARTBEAT_INTERVAL = 50ms;
-
+auto MIN_ELECTION_TIMEOUT = 150ms;
+auto MAX_ELECTION_TIMEOUT = 300ms;
 class KVRaftServer final : public KVRaft::Service {
    public:
     // Constructor
     KVRaftServer();
-
+    //
+    void RunServer();
     // grpc server part
     // Status RequestVote(ServerContext* context,
     //                    const RequestVoteRequest* request,
@@ -72,18 +73,22 @@ class KVRaftServer final : public KVRaft::Service {
                     HelloReply* reply) override;
 
     // grpc client part
-    // bool ClientRequestVote(const int candidate_id, const int last_log_index, const int last_log_term);
+    // bool ClientRequestVote(const int candidate_id, const int last_log_index,
+    // const int last_log_term);
 
-    bool ClientAppendEntries(std::string receive_addr, Log log_entries, bool is_heartbeat, int prev_log_index, int prev_log_term, int commit_index);
+    bool ClientAppendEntries(std::string receive_addr, Log log_entries,
+                             bool is_heartbeat, int prev_log_index,
+                             int prev_log_term, int commit_index);
 
     std::string ClientSayHello(const std::string& user);
 
    private:
     Role identity;
-    
+
     KeyValueStore kv_store;
-    unordered_map<std::string, std::unique_ptr<Raft::Stub>> raft_client_stubs_; // k = addr:port, v = stub_
-    KeyValueStore server_config; // k = name A, v = addr:port 0.0.0.0:50001
+    unordered_map<std::string, std::unique_ptr<Raft::Stub>>
+        raft_client_stubs_;       // k = addr:port, v = stub_
+    KeyValueStore server_config;  // k = name A, v = addr:port 0.0.0.0:50001
 
     string config_path;
     string name;
@@ -91,8 +96,8 @@ class KVRaftServer final : public KVRaft::Service {
     // Timeout
     std::chrono::time_point<std::chrono::high_resolution_clock> curr_time;
     // persistent state on servers
-    int term;
-    int leader_id;
+    int term;       // currentTerm
+    int leader_id;  // votedFor? currentLeader?
     Log logs;
 
     // volatile state on servers
@@ -100,13 +105,18 @@ class KVRaftServer final : public KVRaft::Service {
     int last_applied;
 
     // volatile state on leaders
-    unordered_map<std::string, int> next_index; // unordered_map<std::string addr:port , int index of next log send to that server>
-                                                // for each server, index of the next log entry to send to that server (initialized to leader last log index + 1)
+    unordered_map<std::string, int>
+        next_index;  // unordered_map<std::string addr:port , int index of next
+                     // log send to that server> for each server, index of the
+                     // next log entry to send to that server (initialized to
+                     // leader last log index + 1)
 
-    unordered_map<std::string, int> match_index; // unordered_map<std::string addr:port , int index of next log send to that server>
-                                                // for each server, index of highest log entry known to be replicated on server (initialized to 0, increases monotonically)
-    
-    
+    unordered_map<std::string, int>
+        match_index;  // unordered_map<std::string addr:port , int index of next
+                      // log send to that server> for each server, index of
+                      // highest log entry known to be replicated on server
+                      // (initialized to 0, increases monotonically)
+
     bool read_server_config();
     bool send_heartbeat();
     bool update_stubs_();

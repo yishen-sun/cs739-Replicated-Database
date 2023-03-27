@@ -1,7 +1,8 @@
 #include "kvraft_grpc_server.h"
 
 // constructor
-KVRaftServer::KVRaftServer(std::string name, std::sting addr, std::string config_path)
+KVRaftServer::KVRaftServer(std::string name, std::sting addr,
+                           std::string config_path)
     : name(name), addr(addr), config_path(config_path) {
     curr_time = std::chrono::high_resolution_clock::now();
     identity = Role::FOLLOWER;
@@ -10,31 +11,27 @@ KVRaftServer::KVRaftServer(std::string name, std::sting addr, std::string config
     update_stubs_();
 }
 
-bool KVRaftServer::heartbeat() {
-    std::thread([this]() {
-        while (true) {
-            // if (identity == Role::LEADER) {
-            //     raft_->SendHeartbeats();
-            // }
-            // std::this_thread::sleep_for(
-            //     std::chrono::milliseconds(HEARTBEAT_INTERVAL_MS));
-        }
-    }).detach();
+// bool KVRaftServer::heartbeat() {
+//     std::thread([this]() {
+//         while (true) {
+//             // if (identity == Role::LEADER) {
+//             //     raft_->SendHeartbeats();
+//             // }
+//             // std::this_thread::sleep_for(
+//             //     std::chrono::milliseconds(HEARTBEAT_INTERVAL_MS));
+//         }
+//     }).detach();
 
-    return true;
-}
-
-KVRaftServer::run() {
-    // heart beat thread
-    
-
-
+//     return true;
+// }
+// RunServer可以是 KVRaftServer 的一个 function 吗？
+void KVRaftServer::RunServer() {
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
     ServerBuilder builder;
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     builder.RegisterService(this);
-    
+
     std::unique_ptr<Server> server(builder.BuildAndStart());
     std::cout << "Raft server listening on " << addr << std::endl;
     server->Wait();
@@ -73,15 +70,16 @@ bool KVRaftServer::read_server_config() {
 }
 
 bool KVRaftServer::update_stubs_() {
-    for(const auto& kv : raft_client_stubs_) {
-       kv.second.release();
+    for (const auto& kv : raft_client_stubs_) {
+        kv.second.release();
     }
     raft_client_stubs_.clear();
     for (const auto& pair : server_config) {
         const std::string& cur_name = pair.first;
         const std::string& cur_addr = pair.second;
         if (cur_name != name) {
-            raft_client_stubs_[cur_name] = KVRaft::NewStub(grpc::CreateChannel(cur_addr, grpc::InsecureChannelCredentials()));
+            raft_client_stubs_[cur_name] = KVRaft::NewStub(grpc::CreateChannel(
+                cur_addr, grpc::InsecureChannelCredentials()));
         }
     }
     return true;
@@ -89,7 +87,8 @@ bool KVRaftServer::update_stubs_() {
 
 // -------------------------------------------------------------------------------------------------
 // GRPC Server API
-Status KVRaftServer::Put(ServerContext* context, const PutRequest* request, PutResponse* response){
+Status KVRaftServer::Put(ServerContext* context, const PutRequest* request,
+                         PutResponse* response) {
     std::cout << "KVRaftServer::put" << std::endl;
     std::string k(request->key());
     std::string v(request->value());
@@ -106,7 +105,6 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request, PutR
         } else {
             return /*not ok*/
         }
-        
 
     } else {
         // todo return leader's address
@@ -114,12 +112,12 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request, PutR
 
     inmem_store.Put(k, v);
     response->set_success(0);
-    
+
     return Status::OK;
 }
 
-
-Status KVRaftServer::Get(ServerContext* context, const GetRequest* request, GetResponse* response){
+Status KVRaftServer::Get(ServerContext* context, const GetRequest* request,
+                         GetResponse* response) {
     std::cout << "KVRaftServer::get" << std::endl;
     std::string v(inmem_store.Get(request->key()));
     response->set_success(0);
@@ -127,8 +125,9 @@ Status KVRaftServer::Get(ServerContext* context, const GetRequest* request, GetR
     return Status::OK;
 }
 
-
-Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRequest* request, AppendEntriesResponse* response) {
+Status KVRaftServer::AppendEntries(ServerContext* context,
+                                   const AppendEntriesRequest* request,
+                                   AppendEntriesResponse* response) {
     // heartbeat
     curr_time = std::chrono::high_resolution_clock::now();
     // get all data from the the leader's request
@@ -147,13 +146,14 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
     }
     // The follower does the following checks
     // Checks if its term is up-to-date.
-    // If the follower's term is greater than the leader's term, it rejects the RPC.
+    // If the follower's term is greater than the leader's term, it rejects the
+    // RPC.
     if (term > req_term) {
         response->set_term = term;
         response->set_success = false;
         return Status::OK;
     }
-    // The follower then checks if it has a log entry at prev_log_index 
+    // The follower then checks if it has a log entry at prev_log_index
     // with a term that matches prev_log_term. If not, it rejects the RPC.
     int last_index = logs.getMaxIndex();
     if (last_index < req_prev_log_index) {
@@ -162,29 +162,26 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
         return Status::OK;
     }
     int target_term = logs.getTermByIndex(req_prev_log_index);
-    if(target_term != req_prev_log_term) {
+    if (target_term != req_prev_log_term) {
         logs.removeAfterIndex(req_prev_log_index);
         response->set_term = term;
         response->set_success = false;
         return Status::OK;
     }
-    // If the checks pass, the follower removes any conflicting entries and 
+    // If the checks pass, the follower removes any conflicting entries and
     // appends the new entries from the entries field of the RPC to its log.
     for (auto entry : req_entries) {
-        logs.put(entry.index, to_string(entry.term)+"_"+entry.command);
+        logs.put(entry.index, to_string(entry.term) + "_" + entry.command);
     }
-    // The follower updates its commitIndex according to the leader_commit field, 
-    // applying any newly committed entries to its state machine.
+    // The follower updates its commitIndex according to the leader_commit
+    // field, applying any newly committed entries to its state machine.
     leader_commit = req_leader_commit;
-    // Finally, the follower sends a response to the leader, 
+    // Finally, the follower sends a response to the leader,
     // indicating whether the AppendEntries RPC was successful or not.
     response->set_term = term;
     response->set_success = true;
     return Status::OK;
-
 }
-
-
 
 // // create an AppendEntriesRequest object and set the fields
 // AppendEntriesRequest request;
@@ -199,7 +196,9 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
 
 // -------------------------------------------------------------------------------------------------
 // GRPC Client API
-bool ClientAppendEntries(std:: string receive_addr, Log log_entries, bool is_heartbeat, int prev_log_index, int prev_log_term, int commit_index) {
+bool ClientAppendEntries(std::string receive_addr, Log log_entries,
+                         bool is_heartbeat, int prev_log_index,
+                         int prev_log_term, int commit_index) {
     AppendEntriesRequest request;
     AppendEntriesResponse response;
     Status status;
@@ -209,7 +208,7 @@ bool ClientAppendEntries(std:: string receive_addr, Log log_entries, bool is_hea
     if (is_heartbeat) {
         status = stub_->AppendEntries(&context, request, &response);
         if (status.ok() && response.success() == 0) return true;
-        return false;       
+        return false;
     }
 
     request->set_term(term);
@@ -221,34 +220,70 @@ bool ClientAppendEntries(std:: string receive_addr, Log log_entries, bool is_hea
 
     LogEntry log;
     vector<LogEntry> logs;
-    
+
     log.set_index(i);
     log.set_term(log_entries.getTermByIndex(i));
     log.set_command(log_entries.getCommandByIndex(i));
     logs.push_back(log);
     *(request.add_entries()) = log;
 
-
     status = stub_->AppendEntries(&context, request, &response);
     if (status.ok()) {
-        if(response.term() > term) {
+        if (response.term() > term) {
             term = response.term();
-            return ClientAppendEntries(log_entries, is_heartbeat, prev_log_index, prev_log_term);
+            return ClientAppendEntries(log_entries, is_heartbeat,
+                                       prev_log_index, prev_log_term);
         }
         // resend logic should be handled by caller.
         return response.success();
-    } 
+    }
     return false;
 }
 
 // -------------------------------------------------------------------------------------------------
 // EXAMPLE API
 Status KVRaftServer::SayHello(ServerContext* context,
-                             const HelloRequest* request, HelloReply* reply) {
+                              const HelloRequest* request, HelloReply* reply) {
     std::string prefix("Hello ");
     reply->set_message(prefix + request->name());
     return Status::OK;
 }
+// -------------------------------------------------------------------------------------------------
+// Heartbeat interval API
+void leader_heartbeat_loop(KVRaftServer& raft_node) {
+    while (raft_node.is_leader() && !raft_node.is_shutdown()) {
+        raft_node.send_append_entries_to_all_followers();
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(HEARTBEAT_INTERVAL_MS));
+    }
+}
+// -------------------------------------------------------------------------------------------------
+// Election timeout API
+int random_election_timeout() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(MIN_ELECTION_TIMEOUT,
+                                         MAX_ELECTION_TIMEOUT);
+    return dist(gen);
+}
 
+void election_timer_loop(KVRaftServer& raft_node) {
+    while (!raft_node.is_shutdown()) {
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(random_election_timeout()));
+        if (!raft_node.has_received_recent_communication()) {
+            raft_node.start_election();
+        }
+    }
+}
+// -------------------------------------------------------------------------------------------------
+int main(int argc, char** argv) {
+    KVRaftServer raft_node;
+    thread election_timer_thread(election_timer_loop, std::ref(raft_node));
+    thread heartbeat_thread(leader_heartbeat_loop, std::ref(raft_node));
+    heartbeat_thread.join();
+    election_timer_thread.join();
+    // RunServer();
 
-
+    return 0;
+}

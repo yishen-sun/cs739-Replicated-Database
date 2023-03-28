@@ -3,17 +3,24 @@
 // constructor
 KVRaftServer::KVRaftServer(std::string name, std::string addr,
                            std::string config_path)
-    : name(name), addr(addr), config_path(config_path),
-      logs(Log(name)), term(0), last_applied(0), commit_index(0){
+    : name(name),
+      addr(addr),
+      config_path(config_path),
+      logs(Log(name)),
+      term(0),
+      last_applied(0),
+      commit_index(0) {
     if (test_without_election) {
         std::cout << "Test without election." << std::endl;
-        (name == "server_a") ? identity = Role::LEADER : identity = Role::FOLLOWER;
+        (name == "server_a") ? identity = Role::LEADER
+                             : identity = Role::FOLLOWER;
         // TODO: init index
         next_index["server_b"] = 1;
     } else {
+        cout << "I'm follower now" << endl;
         identity = Role::FOLLOWER;
     }
-    
+
     read_server_config();
     update_stubs_();
 }
@@ -30,8 +37,8 @@ void KVRaftServer::server_loop() {
     std::cout << "Raft server listening on " << addr << std::endl;
     server->Wait();
 }
+
 void KVRaftServer::RunServer() {
-    
     // threads
     thread server_thread(&KVRaftServer::server_loop, this);
     thread election_timer_thread(&KVRaftServer::election_timer_loop, this);
@@ -46,7 +53,8 @@ void KVRaftServer::RunServer() {
     //             // send heartbeat
     //             std::cout << "I am leader: send heartbeat" << std::endl;
     //         } else if (identity == Role::FOLLOWER) {
-    //             std::cout << "I am follower: wait for heartbeat" << std::endl;
+    //             std::cout << "I am follower: wait for heartbeat" <<
+    //             std::endl;
     //             // wait for heartbeat
     //             // if no heartbeat -> wait for random minutes -> become
     //             // candidate
@@ -84,7 +92,7 @@ bool KVRaftServer::update_stubs_() {
         const std::string& cur_name = pair.first;
         const std::string& cur_addr = pair.second;
         if (cur_name != name) {
-            raft_client_stubs_[cur_name] = KVRaft::NewStub(grpc::CreateChannel(
+            raft_client_stubs_[cur_addr] = KVRaft::NewStub(grpc::CreateChannel(
                 cur_addr, grpc::InsecureChannelCredentials()));
         }
     }
@@ -112,15 +120,16 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request,
         //     return /*not ok*/
         // }
 
-        // If command received from client: append entry to local log, respond after entry applied to state machine
-        // applied to local log
-        logs.put(logs.getMaxIndex() + 1, to_string(term) + "_" + logs.transferCommand("Put", k, v));
+        // If command received from client: append entry to local log, respond
+        // after entry applied to state machine applied to local log
+        logs.put(logs.getMaxIndex() + 1,
+                 to_string(term) + "_" + logs.transferCommand("Put", k, v));
         send_append_entries(false);
         commit_index += 1;
         // apply to state machine
-        std::cout << "start to apply" << std::endl;
+        // std::cout << "start to apply" << std::endl;
         applied_log();
-        std::cout << "applied success" << std::endl;
+        // std::cout << "applied success" << std::endl;
 
     } else {
         // todo return leader's address
@@ -151,9 +160,10 @@ Status KVRaftServer::Get(ServerContext* context, const GetRequest* request,
         //     return /*not ok*/
         // }
 
-        // If command received from client: append entry to local log, respond after entry applied to state machine
-        // applied to local log
-        logs.put(logs.getMaxIndex() + 1, to_string(term) + "_" + logs.transferCommand("Get", k, v));
+        // If command received from client: append entry to local log, respond
+        // after entry applied to state machine applied to local log
+        logs.put(logs.getMaxIndex() + 1,
+                 to_string(term) + "_" + logs.transferCommand("Get", k, v));
         send_append_entries(false);
         // apply to state machine
         commit_index += 1;
@@ -168,11 +178,58 @@ Status KVRaftServer::Get(ServerContext* context, const GetRequest* request,
     return Status::OK;
 }
 
+Status KVRaftServer::RequestVote(ServerContext* context,
+                                 const RequestVoteRequest* request,
+                                 RequestVoteResponse* response) {
+    int req_term = request->term();
+    string req_candidate_name = request->candidate_name();
+    int req_last_log_index = request->last_log_index();
+    int req_last_log_term = request->last_log_term();
+    response->set_term(term);
+    response->set_vote_granted(false);
+    if (identity == Role::LEADER) {
+        cout << "deny0" << endl;
+        return Status::OK;
+    }
+    if (term > req_term) {
+        cout << "deny1" << endl;
+        return Status::OK;
+    }
+    if (voted_for.empty() || voted_for == req_candidate_name) {
+        if (logs.getTermByIndex(logs.getMaxIndex()) > req_last_log_term ||
+            (logs.getTermByIndex(logs.getMaxIndex()) == req_last_log_term &&
+             logs.getMaxIndex() > req_last_log_index)) {
+            // deny
+            cout << "term: " << term
+                 << " req_last_log_term: " << req_last_log_term
+                 << " logs max index: " << logs.getMaxIndex()
+                 << " last log term: "
+                 << logs.getTermByIndex(logs.getMaxIndex()) << endl;
+            cout << "deny2" << endl;
+        } else {
+            // grant vote
+            response->set_vote_granted(true);
+            // heartbeat
+            election_timer = std::chrono::high_resolution_clock::now();
+        }
+        return Status::OK;
+    }
+    cout << "deny3" << endl;
+    return Status::OK;
+}
+
 Status KVRaftServer::AppendEntries(ServerContext* context,
                                    const AppendEntriesRequest* request,
                                    AppendEntriesResponse* response) {
     // heartbeat
-    last_receive_appendEntries_time = std::chrono::high_resolution_clock::now();
+    election_timer = std::chrono::high_resolution_clock::now();
+    // convert to follower
+    if (identity == Role::CANDIDATE) {
+        cout << "I'm follower now" << endl;
+        identity = Role::FOLLOWER;
+        voted_for.clear();
+        vote_result.clear();
+    }
     if (request->entries().size() == 0) {
         // std::cout << "heartbeat received" << std::endl;
         // TODO: trigger hearbeat timeout reset
@@ -183,7 +240,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     }
     // get all data from the the leader's request
     int req_term = request->term();
-    int req_leader_id = request->leader_id();
+    string req_leader_name = request->leader_name();
     int req_prev_log_index = request->prev_log_index();
     int req_prev_log_term = request->prev_log_term();
     int req_leader_commit = request->leader_commit();
@@ -222,7 +279,8 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     // If the checks pass, the follower removes any conflicting entries and
     // appends the new entries from the entries field of the RPC to its log.
     for (auto entry : req_entries) {
-        logs.put(entry.index(), to_string(entry.term()) + "_" + entry.command());
+        logs.put(entry.index(),
+                 to_string(entry.term()) + "_" + entry.command());
     }
     // The follower updates its commitIndex according to the leader_commit
     // field, applying any newly committed entries to its state machine.
@@ -234,17 +292,16 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     return Status::OK;
 }
 
-
 // -------------------------------------------------------------------------------------------------
 // GRPC Client API
-bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_ , Log log_entries,
-                         bool is_heartbeat, int prev_log_index,
-                         int prev_log_term, int commit_index, int msg_term) {
+bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_,
+                                       Log log_entries, bool is_heartbeat,
+                                       int prev_log_index, int prev_log_term,
+                                       int commit_index, int msg_term) {
     AppendEntriesRequest request;
     AppendEntriesResponse response;
     Status status;
     ClientContext context;
-
 
     if (is_heartbeat) {
         status = stub_->AppendEntries(&context, request, &response);
@@ -253,7 +310,7 @@ bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_ , Log log_
     }
 
     request.set_term(msg_term);
-    request.set_leader_id(leader_id);
+    request.set_leader_name(name);
     request.set_prev_log_index(prev_log_index);
     request.set_prev_log_term(prev_log_term);
     request.set_leader_commit(commit_index);
@@ -274,13 +331,64 @@ bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_ , Log log_
     if (status.ok()) {
         if (response.term() > term) {
             term = response.term();
-            std::cout << "here2" << std::endl;
-            return ClientAppendEntries(stub_, logs, is_heartbeat,prev_log_index, prev_log_term, commit_index, term);
+            return ClientAppendEntries(stub_, logs, is_heartbeat,
+                                       prev_log_index, prev_log_term,
+                                       commit_index, term);
         }
         // resend logic should be handled by caller.
         return response.success();
     }
     return false;
+}
+
+bool KVRaftServer::ClientRequestVote(shared_ptr<KVRaft::Stub> stub_,
+                                     std::string receive_name,
+                                     const string candidate_name,
+                                     const int last_log_index,
+                                     const int last_log_term) {
+    RequestVoteRequest request;
+    RequestVoteResponse response;
+    Status status;
+    ClientContext context;
+
+    request.set_term(term);
+    request.set_candidate_name(candidate_name);
+    request.set_last_log_index(last_log_index);
+    request.set_last_log_term(last_log_term);
+
+    status = stub_->RequestVote(&context, request, &response);
+    if (status.ok()) {
+        cout << "get vote response from " << receive_name
+             << " term: " << response.term()
+             << " result: " << response.vote_granted() << endl;
+        if (term < response.term()) {
+            term = response.term();
+        }
+        if (response.vote_granted()) {
+            // update vote
+            vote_result[receive_name] = response.vote_granted();
+            check_vote();
+        }
+    }
+
+    return true;
+}
+
+void KVRaftServer::check_vote() {
+    int total_voter_n = raft_client_stubs_.size();
+    int voted_n = 0;
+    for (auto& pair : vote_result) {
+        if (pair.second) {
+            voted_n++;
+        }
+    }
+    if (voted_n * 2 > total_voter_n) {
+        // become leader
+        cout << "I'm leader now" << endl;
+        identity = Role::LEADER;
+        voted_for.clear();
+        vote_result.clear();
+    }
 }
 
 // Server function API
@@ -290,21 +398,25 @@ void KVRaftServer::send_append_entries(bool is_heartbeat) {
     for (const auto& pair : raft_client_stubs_) {
         const std::string cur_server = pair.first;
         std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
-        
+
         if (is_heartbeat == true) {
-            ClientAppendEntries(cur_stub_, logs, is_heartbeat, -1, -1, -1, term);
+            ClientAppendEntries(cur_stub_, logs, is_heartbeat, -1, -1, -1,
+                                term);
         } else {
-            // If last log index ≥ nextIndex for a follower: send AppendEntries RPC with log entries starting at nextIndex
-            //   • If successful: update nextIndex and matchIndex for follower (§5.3)
-            //   • If AppendEntries fails because of log inconsistency: decrement nextIndex and retry (§5.3)
+            // If last log index ≥ nextIndex for a follower: send AppendEntries
+            // RPC with log entries starting at nextIndex
+            //   • If successful: update nextIndex and matchIndex for follower
+            //   (§5.3) • If AppendEntries fails because of log inconsistency:
+            //   decrement nextIndex and retry (§5.3)
             int cur_next_index;
             while (logs.getMaxIndex() >= next_index[cur_server]) {
-                std::cout << "here1" << std::endl;
                 cur_next_index = next_index[cur_server];
                 if (ClientAppendEntries(cur_stub_, logs, is_heartbeat,
-                                       cur_next_index - 1, logs.getTermByIndex(cur_next_index - 1), commit_index, term)) {
-                    next_index[cur_server] += 1; //cur_next_index + 1;
-                    match_index[cur_server] += 1;// cur_next_index;
+                                        cur_next_index - 1,
+                                        logs.getTermByIndex(cur_next_index - 1),
+                                        commit_index, term)) {
+                    next_index[cur_server] += 1;   // cur_next_index + 1;
+                    match_index[cur_server] += 1;  // cur_next_index;
                 } else {
                     next_index[cur_server] -= 1;
                 }
@@ -314,15 +426,14 @@ void KVRaftServer::send_append_entries(bool is_heartbeat) {
         // check_majority += 1;
         // if (check majority > 3/2) {
         //     applied_commited
-            
+
         // }
     }
 }
-// 
-std::string KVRaftServer::applied_log(){
+//
+std::string KVRaftServer::applied_log() {
     // TODO: current asumption: no delay applied log
     std::string result = "";
-    std::cout << "apply" << std::endl;
     while (last_applied + 1 <= commit_index) {
         std::string command = logs.getCommandByIndex(last_applied + 1);
         std::string behavior;
@@ -330,11 +441,12 @@ std::string KVRaftServer::applied_log(){
         std::string val;
         logs.parseCommand(command, behavior, key, val);
         std::cout << "last applied index: " << last_applied + 1 << std::endl;
-        
-        std::cout << "command: " << command << " b: " << behavior << " key: " << key << " val: " << val << std::endl;
+
+        std::cout << "command: " << command << " b: " << behavior
+                  << " key: " << key << " val: " << val << std::endl;
         if (behavior == "P") {
             state_machine_interface.Put(key, val);
-        } else if(behavior == "G") {
+        } else if (behavior == "G") {
             result = state_machine_interface.Get(key);
         } else {
             std::cout << "eerrrorrr" << std::endl;
@@ -343,7 +455,6 @@ std::string KVRaftServer::applied_log(){
     }
     return result;
 }
-
 
 // -------------------------------------------------------------------------------------------------
 // EXAMPLE API
@@ -357,9 +468,9 @@ Status KVRaftServer::SayHello(ServerContext* context,
 // Heartbeat interval API
 void KVRaftServer::leader_heartbeat_loop() {
     std::cout << "leader heartbeat thread starts" << std::endl;
-    while(true) {
+    while (true) {
         if (identity == Role::LEADER) {
-            // std::cout << "heartbeat thread is sending a heartbeat" << std::endl;
+            std::cout << "heartbeat thread is sending a heartbeat" << std::endl;
             send_append_entries(true);
         }
         std::this_thread::sleep_for(
@@ -382,21 +493,49 @@ void KVRaftServer::election_timer_loop() {
         auto sleep_start = std::chrono::high_resolution_clock::now();
         std::this_thread::sleep_for(
             std::chrono::milliseconds(random_election_timeout()));
-        if (last_receive_appendEntries_time <= sleep_start && identity == Role::FOLLOWER) {
-            // if during sleep time, the server recieve appendEntries, 
+        if (election_timer <= sleep_start && identity == Role::FOLLOWER) {
+            // if during sleep time, the server recieve appendEntries,
             start_election();
+        }
+        if (election_timer <= sleep_start && identity == Role::CANDIDATE) {
+            // if a period of time goes by with no winner
+            cout << "I'm follower now" << endl;
+            identity = Role::FOLLOWER;
+            voted_for.clear();
+            vote_result.clear();
         }
     }
 }
 // -------------------------------------------------------------------------------------------------
 // Election API
 void KVRaftServer::start_election() {
-    // std::cout << "starting election" << std::endl;
+    std::cout << "starting election" << std::endl;
+    identity = Role::CANDIDATE;
+    term++;
+    voted_for = addr;
+    vote_result[addr] = true;
+    // Reset election timer
+    election_timer = std::chrono::high_resolution_clock::now();
+    // Send RequestVote RPCs to all other servers
+    for (const auto& pair : raft_client_stubs_) {
+        const std::string cur_addr = pair.first;
+        std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
+        cout << "send ClientRequestVote to " << cur_addr << endl;
+        ClientRequestVote(cur_stub_, cur_addr, voted_for, logs.getMaxIndex(),
+                          logs.getTermByIndex(logs.getMaxIndex()));
+    }
 }
+
+void KVRaftServer::change_identity(Role role) {
+    // std::lock_guard<std::mutex> lock(my_mutex);
+    identity = role;
+}
+
 // -------------------------------------------------------------------------------------------------
 int main(int argc, char* argv[]) {
     if (argc != 4) {
-        std::cout << "you must provide three arguments: name, addr, config_path" << std::endl;
+        std::cout << "you must provide three arguments: name, addr, config_path"
+                  << std::endl;
         std::cout << "For example: A, 0.0.0.0:50001, ./config.txt" << std::endl;
         return 0;
     }

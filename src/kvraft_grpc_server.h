@@ -16,11 +16,11 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
-#include <random>
 
 #include "./key_value_store.h"
 #include "./log.hpp"
@@ -46,20 +46,19 @@ using namespace std::chrono_literals;
 
 enum Role { LEADER, FOLLOWER, CANDIDATE };
 constexpr int HEARTBEAT_INTERVAL = 50;
-constexpr int MIN_ELECTION_TIMEOUT = 150;
-constexpr int MAX_ELECTION_TIMEOUT = 300;
-bool test_without_election = true;
+constexpr int MIN_ELECTION_TIMEOUT = 500;
+constexpr int MAX_ELECTION_TIMEOUT = 1000;
+bool test_without_election = false;
 class KVRaftServer final : public KVRaft::Service {
    public:
     // Constructor
-    KVRaftServer(std::string name, std::string addr,
-                           std::string config_path);
+    KVRaftServer(std::string name, std::string addr, std::string config_path);
     //
     void RunServer();
     // grpc server part
-    // Status RequestVote(ServerContext* context,
-    //                    const RequestVoteRequest* request,
-    //                    RequestVoteResponse* response) override;
+    Status RequestVote(ServerContext* context,
+                       const RequestVoteRequest* request,
+                       RequestVoteResponse* response) override;
 
     Status AppendEntries(ServerContext* context,
                          const AppendEntriesRequest* request,
@@ -75,8 +74,10 @@ class KVRaftServer final : public KVRaft::Service {
                     HelloReply* reply) override;
 
     // grpc client part
-    // bool ClientRequestVote(const int candidate_id, const int last_log_index,
-    // const int last_log_term);
+    bool ClientRequestVote(shared_ptr<KVRaft::Stub> stub_,
+                           const std::string receive_name,
+                           const string candidate_name,
+                           const int last_log_index, const int last_log_term);
 
     bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log log_entries,
                              bool is_heartbeat, int prev_log_index,
@@ -88,6 +89,7 @@ class KVRaftServer final : public KVRaft::Service {
     // server function
     void send_append_entries(bool is_heartbeat);
     void start_election();
+    void check_vote();
 
     std::string applied_log();
 
@@ -96,17 +98,20 @@ class KVRaftServer final : public KVRaft::Service {
 
     KeyValueStore state_machine_interface;
     unordered_map<std::string, std::shared_ptr<KVRaft::Stub>>
-        raft_client_stubs_;       // k = addr:port, v = stub_
-    unordered_map<std::string, std::string> server_config;  // k = name A, v = addr:port 0.0.0.0:50001
+        raft_client_stubs_;  // k = addr:port, v = stub_
+    unordered_map<std::string, std::string>
+        server_config;  // k = name A, v = addr:port 0.0.0.0:50001
+
+    unordered_map<std::string, bool> vote_result;  // k = name, v = vote or not;
 
     string config_path;
     string name;
     string addr;
     // Timeout
-    std::chrono::time_point<std::chrono::high_resolution_clock> last_receive_appendEntries_time;
+    std::chrono::time_point<std::chrono::high_resolution_clock> election_timer;
     // persistent state on servers
-    int term;       // currentTerm
-    int leader_id;  // votedFor? currentLeader?
+    int term;          // currentTerm
+    string voted_for;  // TODO: persistent state
     Log logs;
 
     // volatile state on servers
@@ -121,9 +126,9 @@ class KVRaftServer final : public KVRaft::Service {
                      // leader last log index + 1)
 
     unordered_map<std::string, int>
-        match_index;  // unordered_map<std::string addr:port , for each server, 
-                      // index of highest log entry known to be replicated on server
-                      // (initialized to 0, increases monotonically)
+        match_index;  // unordered_map<std::string addr:port , for each server,
+                      // index of highest log entry known to be replicated on
+                      // server (initialized to 0, increases monotonically)
 
     bool read_server_config();
     bool send_heartbeat();
@@ -132,4 +137,6 @@ class KVRaftServer final : public KVRaft::Service {
     void leader_heartbeat_loop();
     int random_election_timeout();
     void election_timer_loop();
+    void change_identity(Role role);
+    std::mutex my_mutex;
 };

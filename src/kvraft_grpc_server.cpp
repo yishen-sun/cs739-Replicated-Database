@@ -47,32 +47,15 @@ void KVRaftServer::server_loop() {
 
 void KVRaftServer::RunServer() {
     // threads
-    // server_loop();
     thread server_thread(&KVRaftServer::server_loop, this);
-    // server_thread.join();
+    thread state_machine_thread(&KVRaftServer::state_machine_loop, this);
     thread election_timer_thread(&KVRaftServer::election_timer_loop, this);
     thread heartbeat_thread(&KVRaftServer::leader_heartbeat_loop, this);
     
-    
+    server_thread.join();
     heartbeat_thread.join();
     election_timer_thread.join();
-
-    // while
-    //     true {
-    //         if (identity == Role::LEADER) {
-    //             // send heartbeat
-    //             std::cout << "I am leader: send heartbeat" << std::endl;
-    //         } else if (identity == Role::FOLLOWER) {
-    //             std::cout << "I am follower: wait for heartbeat" <<
-    //             std::endl;
-    //             // wait for heartbeat
-    //             // if no heartbeat -> wait for random minutes -> become
-    //             // candidate
-    //         } else if (identity == Role::CANDIDATE) {
-    //             std::cout << "I am Candidate: start election" << std::endl;
-    //             // start election
-    //         }
-    //     }
+    state_machine_thread.join();
 }
 
 bool KVRaftServer::read_server_config() {
@@ -157,12 +140,16 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request,
         // std::cout << "start to apply" << std::endl;
         applied_log();
         // std::cout << "applied success" << std::endl;
-
+        response->set_success(0);
     } else {
         // todo return leader's address
+        if (leader_addr.empty()) {
+            response->set_master_addr("NO_MASTER_YET");
+        } else {
+            response->set_master_addr(leader_addr);
+        }
+        response->set_success(1);
     }
-
-    response->set_success(0);
     return Status::OK;
 }
 
@@ -196,13 +183,17 @@ Status KVRaftServer::Get(ServerContext* context, const GetRequest* request,
         // apply to state machine
         commit_index += 1;
         result = applied_log();
-
+        response->set_success(0);
+        response->set_value(result);
     } else {
         // todo return leader's address
+        if (leader_addr.empty()) {
+            response->set_master_addr("NO_MASTER_YET");
+        } else {
+            response->set_master_addr(leader_addr);
+        }
+        response->set_success(1);
     }
-
-    response->set_success(0);
-    response->set_value(result);
     return Status::OK;
 }
 
@@ -276,22 +267,30 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
                                    const AppendEntriesRequest* request,
                                    AppendEntriesResponse* response) {
     int req_term = request->term();
+    string req_leader_name = request->leader_name();
     can_vote = false;
     // heartbeat
     election_timer = std::chrono::high_resolution_clock::now();
     // convert to follower
-    if (identity == Role::CANDIDATE) {
-    // if (get_identity() == Role::CANDIDATE) {
+    if (identity == Role::CANDIDATE && term <= req_term) {
+        can_vote = false;
         cout << "I'm follower now" << endl;
         identity = Role::FOLLOWER;
         // set_identity(Role::FOLLOWER);
         // voted_for.clear();
         vote_result.clear();
+    } else if (identity == Role::CANDIDATE) {
+        can_vote = true;
+        response->set_term(term);
+        response->set_success(false);
+        return Status::OK;
     }
+    leader_addr = server_config[req_leader_name];
+
     if (request->entries().size() == 0) {
-        std::cout << "heartbeat received" << std::endl;
-        std::cout << "follower term is " << term << std::endl;
-        std::cout << "follower req_term is " << req_term << std::endl;
+        // std::cout << "heartbeat received" << std::endl;
+        // std::cout << "follower term is " << term << std::endl;
+        // std::cout << "follower req_term is " << req_term << std::endl;
         // TODO: trigger hearbeat timeout reset
         if (term < req_term) {
             term = req_term;
@@ -300,8 +299,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
         response->set_success(true);
         return Status::OK;
     }
-    // get all data from the the leader's request
-    string req_leader_name = request->leader_name();
+    // get remain data from the the leader's request
     int req_prev_log_index = request->prev_log_index();
     int req_prev_log_term = request->prev_log_term();
     int req_leader_commit = request->leader_commit();
@@ -476,7 +474,8 @@ void KVRaftServer::send_append_entries(bool is_heartbeat) {
         std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
 
         if (is_heartbeat == true) {
-            std::cout << "send heartbeat to: " << cur_server << std::endl;
+            // std::cout << "send heartbeat to: " << cur_server << std::endl;
+            if (cur_identity != identity) return;
             ClientAppendEntries(cur_stub_, logs, is_heartbeat, -1, -1, -1,
                                 term);
         } else {
@@ -486,7 +485,8 @@ void KVRaftServer::send_append_entries(bool is_heartbeat) {
             //   (§5.3) • If AppendEntries fails because of log inconsistency:
             //   decrement nextIndex and retry (§5.3)
             int cur_next_index;
-            while (logs.getMaxIndex() >= next_index[cur_server] && cur_identity == identity) {
+            while (logs.getMaxIndex() >= next_index[cur_server]) {
+                if (cur_identity != identity) return;
                 cur_next_index = next_index[cur_server];
                 if (ClientAppendEntries(cur_stub_, logs, is_heartbeat,
                                         cur_next_index - 1,
@@ -547,8 +547,8 @@ void KVRaftServer::leader_heartbeat_loop() {
     std::cout << "leader heartbeat thread starts" << std::endl;
     while (true) {
         if (identity == Role::LEADER) {
-            std::cout << "heartbeat thread is sending a heartbeat" << std::endl;
-            std::cout << "leader term: " << term << std::endl;
+            // std::cout << "heartbeat thread is sending a heartbeat" << std::endl;
+            // std::cout << "leader term: " << term << std::endl;
             send_append_entries(true);
         }
         std::this_thread::sleep_for(
@@ -589,6 +589,7 @@ void KVRaftServer::election_timer_loop() {
 // Election API
 void KVRaftServer::start_election() {
     std::cout << "starting election" << std::endl;
+    leader_addr.clear();
     identity = Role::CANDIDATE;
     term++;
     if (!persistent_voted_for.Get(to_string(term)).empty()) {
@@ -611,6 +612,18 @@ void KVRaftServer::start_election() {
                             logs.getTermByIndex(logs.getMaxIndex()));
         }
         
+    }
+}
+// -------------------------------------------------------------------------------------------------
+// State machine timeout API
+void KVRaftServer::state_machine_loop() {
+    std::cout << "State machine thread start" << std::endl;
+    while (true) {
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(HEARTBEAT_INTERVAL));
+        while (commit_index > last_applied && identity == Role::FOLLOWER) {
+            applied_log();
+        }
     }
 }
 

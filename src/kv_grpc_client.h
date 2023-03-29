@@ -20,7 +20,7 @@ using kvraft::HelloReply;
 
 class KeyValueStoreClient {
    public:
-    KeyValueStoreClient(std::shared_ptr<Channel> channel);
+    KeyValueStoreClient(std::string target_str);
 
     bool Put(const std::string& key, const std::string& value);
 
@@ -30,5 +30,6 @@ class KeyValueStoreClient {
 
    private:
     std::unique_ptr<KVRaft::Stub> stub_;
+    std::shared_ptr<Channel> channel_;
 };
 

@@ -116,6 +116,8 @@ class KVRaftServer final : public KVRaft::Service {
     KeyValueStore persistent_voted_for; // key = term, v = vote for addr
     Log logs;
 
+    string leader_addr;
+
     // volatile state on servers
     int commit_index;
     int last_applied;
@@ -142,6 +144,7 @@ class KVRaftServer final : public KVRaft::Service {
     void leader_heartbeat_loop();
     int random_election_timeout();
     void election_timer_loop();
+    void state_machine_loop();
     // void change_identity(Role new_role, Role previous_role);
     // Role get_identity();
     // void set_identity(Role new_role);

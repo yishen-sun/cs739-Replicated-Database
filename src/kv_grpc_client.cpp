@@ -1,20 +1,26 @@
 #include "kv_grpc_client.h"
 
-std::string NO_MASTER_YET = "NO_MASTER";
+std::string NO_MASTER_YET = "NO_MASTER_YET";
 
-KeyValueStoreClient::KeyValueStoreClient(std::shared_ptr<Channel> channel)
-        : stub_(KVRaft::NewStub(channel)) {}
+KeyValueStoreClient::KeyValueStoreClient(std::string target_str){
+        grpc::ChannelArguments channel_args;
+        channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
+        channel_ = grpc::CreateCustomChannel(target_str, grpc::InsecureChannelCredentials(), channel_args);
+        stub_ = KVRaft::NewStub(channel_);
+    }
 
 bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) {
-    PutRequest request;
-    request.set_key(key);
-    request.set_value(value);
 
-    PutResponse response;
-    ClientContext context;
-
-    Status status;
     while (true) {
+        PutRequest request;
+        request.set_key(key);
+        request.set_value(value);
+
+        PutResponse response;
+        
+        Status status;
+    
+        ClientContext context;
         status = stub_->Put(&context, request, &response);
         if (status.ok()) {
             if (response.success() == 0) return true;
@@ -27,6 +33,7 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
                 std::cout << "update stub channel" << std::endl;
                 stub_.release();
                 std::string master_addr = response.master_addr();
+                std::cout << master_addr << std::endl;
                 stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
             }
         } else {
@@ -36,14 +43,14 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
 }
 
 bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
-    GetRequest request;
-    request.set_key(key);
-
-    GetResponse response;
-    ClientContext context;
-
-    Status status;
     while (true) {
+        GetRequest request;
+        request.set_key(key);
+        
+        GetResponse response;
+        
+        Status status;
+        ClientContext context;
         status = stub_->Get(&context, request, &response);
         if (status.ok()) {
             if (response.success() == 0) {
@@ -55,10 +62,9 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
                 std::cout << "NO_MASTER_YET" << std::endl;
                 sleep(0.2);
             } else {
-                // update stub channel
                 std::cout << "update stub channel" << std::endl;
-                stub_.release();
                 std::string master_addr = response.master_addr();
+                std::cout << master_addr << std::endl;
                 stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
             }
         } else {

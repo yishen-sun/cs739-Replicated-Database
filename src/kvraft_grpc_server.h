@@ -46,8 +46,9 @@ using namespace std::chrono_literals;
 
 enum Role { LEADER, FOLLOWER, CANDIDATE };
 constexpr int HEARTBEAT_INTERVAL = 50;
-constexpr int MIN_ELECTION_TIMEOUT = 500;
-constexpr int MAX_ELECTION_TIMEOUT = 1000;
+// TODO: too short -> start election before receive first heartbeat
+constexpr int MIN_ELECTION_TIMEOUT = 1200;
+constexpr int MAX_ELECTION_TIMEOUT = 2000;
 bool test_without_election = false;
 class KVRaftServer final : public KVRaft::Service {
    public:
@@ -112,11 +113,13 @@ class KVRaftServer final : public KVRaft::Service {
     // persistent state on servers
     int term;          // currentTerm
     string voted_for;  // TODO: persistent state
+    KeyValueStore persistent_voted_for; // key = term, v = vote for addr
     Log logs;
 
     // volatile state on servers
     int commit_index;
     int last_applied;
+    bool can_vote;
 
     // volatile state on leaders
     unordered_map<std::string, int>
@@ -131,12 +134,16 @@ class KVRaftServer final : public KVRaft::Service {
                       // server (initialized to 0, increases monotonically)
 
     bool read_server_config();
+    bool read_state_machine_config(std::string filename);
+    bool read_voted_for_config(std::string filename);
     bool send_heartbeat();
     bool update_stubs_();
     // heartbeats and election threads functions
     void leader_heartbeat_loop();
     int random_election_timeout();
     void election_timer_loop();
-    void change_identity(Role role);
-    std::mutex my_mutex;
+    // void change_identity(Role new_role, Role previous_role);
+    // Role get_identity();
+    // void set_identity(Role new_role);
+    std::mutex role_mutex;
 };

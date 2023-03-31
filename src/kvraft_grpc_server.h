@@ -80,7 +80,7 @@ class KVRaftServer final : public KVRaft::Service {
                            const string candidate_name,
                            const int last_log_index, const int last_log_term);
 
-    bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log log_entries,
+    bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log& log_entries,
                              bool is_heartbeat, int prev_log_index,
                              int prev_log_term, int commit_index, int msg_term);
 
@@ -88,11 +88,11 @@ class KVRaftServer final : public KVRaft::Service {
     // server thread
     void server_loop();
     // server function
-    void send_append_entries(bool is_heartbeat);
+    bool send_append_entries(bool is_heartbeat, bool send_commit);
     void start_election();
     void check_vote();
 
-    std::string applied_log();
+    std::string applied_log(int commitable_index);
 
    private:
     Role identity;
@@ -102,6 +102,8 @@ class KVRaftServer final : public KVRaft::Service {
         raft_client_stubs_;  // k = addr:port, v = stub_
     unordered_map<std::string, std::string>
         server_config;  // k = name A, v = addr:port 0.0.0.0:50001
+    
+    unordered_map<std::string, bool> check_alive; // k = addr:port, v = true for live false for unavailable
 
     unordered_map<std::string, bool> vote_result;  // k = name, v = vote or not;
 

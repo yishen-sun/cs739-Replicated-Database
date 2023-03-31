@@ -95,3 +95,20 @@ foreach(_target
     
     stdc++fs)
 endforeach()
+
+
+# Modify names for the source code
+foreach(_target
+  throughtput)
+  add_executable(${_target} "./performance/${_target}.cpp"
+    ${hw_proto_srcs}
+    ${hw_grpc_srcs}
+    kv_grpc_client.h
+    kv_grpc_client.cpp
+    ./performance/throughtput.hpp)
+  target_link_libraries(${_target}
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF}
+    stdc++fs)
+endforeach()

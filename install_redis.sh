@@ -1,4 +1,4 @@
-sudo apt install redis-server
+sudo apt install -y redis-server
 export MY_INSTALL_DIR=$HOME/.local
 export PATH="$MY_INSTALL_DIR/bin:$PATH"
 # Clone the project

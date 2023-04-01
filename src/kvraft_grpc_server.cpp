@@ -12,8 +12,7 @@ KVRaftServer::KVRaftServer(std::string name, std::string addr,
       commit_index(0),
       persistent_voted_for(name + "_vote_for.txt"),
       state_machine_interface(name + "_state_machine.txt"),
-      can_vote(true)
-       {
+      can_vote(true) {
     if (test_without_election) {
         std::cout << "Test without election." << std::endl;
         (name == "server_a") ? identity = Role::LEADER
@@ -51,7 +50,7 @@ void KVRaftServer::RunServer() {
     thread state_machine_thread(&KVRaftServer::state_machine_loop, this);
     thread election_timer_thread(&KVRaftServer::election_timer_loop, this);
     thread heartbeat_thread(&KVRaftServer::leader_heartbeat_loop, this);
-    
+
     server_thread.join();
     heartbeat_thread.join();
     election_timer_thread.join();
@@ -116,7 +115,7 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request,
     std::string k(request->key());
     std::string v(request->value());
     if (identity == Role::LEADER) {
-    // if (get_identity() == Role::LEADER) {
+        // if (get_identity() == Role::LEADER) {
         // int cnt = 0;
         // for (const auto& pair : raft_client_stubs_) {
         //     const std::string& name = pair.first;
@@ -161,7 +160,7 @@ Status KVRaftServer::Get(ServerContext* context, const GetRequest* request,
     std::string v;
     std::string result;
     if (identity == Role::LEADER) {
-    // if (get_identity() == Role::LEADER) {
+        // if (get_identity() == Role::LEADER) {
         // int cnt = 0;
         // for (const auto& pair : raft_client_stubs_) {
         //     const std::string& name = pair.first;
@@ -210,7 +209,7 @@ Status KVRaftServer::RequestVote(ServerContext* context,
         return Status::OK;
     }
     if (identity == Role::LEADER) {
-    // if (get_identity() == Role::LEADER) {
+        // if (get_identity() == Role::LEADER) {
         cout << "deny0" << endl;
         return Status::OK;
     }
@@ -219,7 +218,8 @@ Status KVRaftServer::RequestVote(ServerContext* context,
         return Status::OK;
     }
     // persistent_voted_for
-    if (persistent_voted_for.Get(to_string(req_term)).empty() || persistent_voted_for.Get(to_string(req_term)) == req_candidate_name) {
+    if (persistent_voted_for.Get(to_string(req_term)).empty() ||
+        persistent_voted_for.Get(to_string(req_term)) == req_candidate_name) {
         if (logs.getTermByIndex(logs.getMaxIndex()) > req_last_log_term ||
             (logs.getTermByIndex(logs.getMaxIndex()) == req_last_log_term &&
              logs.getMaxIndex() > req_last_log_index)) {
@@ -227,14 +227,14 @@ Status KVRaftServer::RequestVote(ServerContext* context,
             cout << "term: " << term
                  << " req_last_log_term: " << req_last_log_term
                  << " logs max index: " << logs.getMaxIndex()
-                 << " last log term: "  
+                 << " last log term: "
                  << logs.getTermByIndex(logs.getMaxIndex()) << endl;
             cout << "deny2" << endl;
         } else {
             // grant vote
             persistent_voted_for.Put(to_string(term), req_candidate_name);
             response->set_vote_granted(true);
-            
+
             // heartbeat
             election_timer = std::chrono::high_resolution_clock::now();
         }
@@ -547,8 +547,8 @@ void KVRaftServer::leader_heartbeat_loop() {
     std::cout << "leader heartbeat thread starts" << std::endl;
     while (true) {
         if (identity == Role::LEADER) {
-            // std::cout << "heartbeat thread is sending a heartbeat" << std::endl;
-            // std::cout << "leader term: " << term << std::endl;
+            // std::cout << "heartbeat thread is sending a heartbeat" <<
+            // std::endl; std::cout << "leader term: " << term << std::endl;
             send_append_entries(true);
         }
         std::this_thread::sleep_for(
@@ -599,19 +599,19 @@ void KVRaftServer::start_election() {
     persistent_voted_for.Put(to_string(term), addr);
     vote_result[addr] = true;
     // voted_for = addr;
-    
+
     // Reset election timer
     election_timer = std::chrono::high_resolution_clock::now();
     // Send RequestVote RPCs to all other servers
     for (const auto& pair : raft_client_stubs_) {
-        if (identity == Role::CANDIDATE){
+        if (identity == Role::CANDIDATE) {
             const std::string cur_addr = pair.first;
             std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
             cout << "send ClientRequestVote to " << cur_addr << endl;
-            ClientRequestVote(cur_stub_, cur_addr, voted_for, logs.getMaxIndex(),
-                            logs.getTermByIndex(logs.getMaxIndex()));
+            ClientRequestVote(cur_stub_, cur_addr, voted_for,
+                              logs.getMaxIndex(),
+                              logs.getTermByIndex(logs.getMaxIndex()));
         }
-        
     }
 }
 // -------------------------------------------------------------------------------------------------

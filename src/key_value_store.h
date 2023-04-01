@@ -9,7 +9,7 @@
 #include <unordered_map>
 
 using namespace std;
-#define KV_REDIS_
+
 class KeyValueStore {
    public:
     KeyValueStore(std::string fname);
@@ -19,7 +19,7 @@ class KeyValueStore {
 
    private:
     std::string filename;
-#ifndef KV_REDIS_
+#ifndef USE_REDIS
     std::unordered_map<std::string, std::string> store_;
     void writeToDisk();
     std::mutex kv_mutex;

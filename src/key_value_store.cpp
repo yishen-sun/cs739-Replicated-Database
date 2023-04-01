@@ -1,6 +1,6 @@
 #include "key_value_store.h"
-#define KV_REDIS_
-#ifndef KV_REDIS_
+
+#ifndef USE_REDIS
 
 KeyValueStore::KeyValueStore(std::string fname) : filename(fname) {}
 

@@ -68,13 +68,14 @@ bool KeyValueStore::Put(const std::string& key, const std::string& value) {
 
 std::string KeyValueStore::Get(const std::string& key) {
     std::string result;
+    std::cout << "The key " << key << std::endl;
     client.get(key, [&result](cpp_redis::reply& reply) {
         if (reply.is_null()) {
             std::cout << "The key doesn't exist" << std::endl;
         } else {
             std::cout << "Retrieved value: " << reply.as_string() << std::endl;
+            result = reply.as_string();
         }
-        result = reply.as_string();
     });
     client.sync_commit();
     return result;

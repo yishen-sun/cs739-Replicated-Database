@@ -1,5 +1,5 @@
 #include "key_value_store.h"
-
+#define KV_REDIS_
 #ifndef KV_REDIS_
 
 KeyValueStore::KeyValueStore(std::string fname) : filename(fname) {}
@@ -67,8 +67,8 @@ bool KeyValueStore::Put(const std::string& key, const std::string& value) {
 }
 
 std::string KeyValueStore::Get(const std::string& key) {
-    string result;
-    client.get(key, [](cpp_redis::reply& reply) {
+    std::string result;
+    client.get(key, [&result](cpp_redis::reply& reply) {
         if (reply.is_null()) {
             std::cout << "The key doesn't exist" << std::endl;
         } else {

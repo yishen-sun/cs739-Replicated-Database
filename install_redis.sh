@@ -15,7 +15,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 # Install the library
 sudo make install
-
+cd ..
 cd tacopie
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release

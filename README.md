@@ -3,7 +3,14 @@
 ```
 sh install_grpc.sh
 sh install_redis.sh
+```
+to build a basic version
+```
 sh build.sh
+```
+to build a redis version
+```
+sh build.sh redis
 ```
 
 ```

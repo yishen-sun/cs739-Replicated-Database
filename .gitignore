@@ -2,3 +2,4 @@ grpc
 build
 release
 cpp_redis
+raft_config.txt

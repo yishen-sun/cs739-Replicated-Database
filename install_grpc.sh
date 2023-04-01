@@ -3,9 +3,10 @@ export MY_INSTALL_DIR=$HOME/.local
 mkdir -p $MY_INSTALL_DIR
 export PATH="$MY_INSTALL_DIR/bin:$PATH"
 
+sudo apt update -y
+
 sudo apt install -y cmake
 
-sudo apt update -y
 sudo apt install -y build-essential autoconf libtool pkg-config libsystemd-dev 
 # sudo apt install -y cmake
 

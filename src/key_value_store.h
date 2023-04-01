@@ -9,7 +9,7 @@
 #include <unordered_map>
 
 using namespace std;
-
+#define KV_REDIS_
 class KeyValueStore {
    public:
     KeyValueStore(std::string fname);

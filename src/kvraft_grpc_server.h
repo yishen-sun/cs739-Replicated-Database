@@ -22,6 +22,8 @@
 #include <thread>
 #include <vector>
 
+// #define KV_REDIS_
+
 #include "./key_value_store.h"
 #include "./log.hpp"
 #include "kvraft.grpc.pb.h"
@@ -111,9 +113,9 @@ class KVRaftServer final : public KVRaft::Service {
     // Timeout
     std::chrono::time_point<std::chrono::high_resolution_clock> election_timer;
     // persistent state on servers
-    int term;          // currentTerm
-    string voted_for;  // TODO: persistent state
-    KeyValueStore persistent_voted_for; // key = term, v = vote for addr
+    int term;                            // currentTerm
+    string voted_for;                    // TODO: persistent state
+    KeyValueStore persistent_voted_for;  // key = term, v = vote for addr
     Log logs;
 
     string leader_addr;

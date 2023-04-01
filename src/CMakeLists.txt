@@ -49,7 +49,8 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 # redis
 if(USE_REDIS)
-message("USE REDIS")
+message("USE REDIS hahah")
+add_definitions(-DUSE_REDIS)
 include_directories("$ENV{HOME}/cs739-Replicated-Database/cpp_redis/includes")
 set(_REDIS "$ENV{HOME}/cs739-Replicated-Database/cpp_redis/build/lib/libcpp_redis.a")
 include_directories("$ENV{HOME}/cs739-Replicated-Database/cpp_redis/tacopie/includes")

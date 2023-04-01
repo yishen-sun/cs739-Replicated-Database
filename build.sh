@@ -1,9 +1,19 @@
+if [ -z "$1" ]; then
+    echo "The first argument is empty."
+    mkdir -p build
+    cd build
+    cmake ../src
+    make
+    cd ..
+else
+    echo "The first argument is not empty."
+    mkdir -p build
+    cd build
+    cmake ../src -D USE_REDIS=ON
+    make
+    cd ..
+fi
 
-mkdir -p build
-cd build
-cmake ../src
-make
-cd ..
 
 mkdir -p release
 cp build/cli_client release/cli_client

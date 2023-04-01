@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 # Project
 project(raft)
 
+option(USE_REDIS "use redis instead of our own key value store" OFF)
+
 # Protobuf
 set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf CONFIG REQUIRED)
@@ -45,9 +47,14 @@ add_custom_command(
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-
-
-
+# redis
+if(USE_REDIS)
+message("USE REDIS")
+include_directories("$ENV{HOME}/cs739-Replicated-Database/cpp_redis/includes")
+set(_REDIS "$ENV{HOME}/cs739-Replicated-Database/cpp_redis/build/lib/libcpp_redis.a")
+include_directories("$ENV{HOME}/cs739-Replicated-Database/cpp_redis/tacopie/includes")
+set(_TACOPIE "$ENV{HOME}/cs739-Replicated-Database/cpp_redis/tacopie/build/lib/libtacopie.a")
+endif()
 # Modify names for the source code
 foreach(_target
   cli_client)
@@ -75,9 +82,15 @@ foreach(_target
     key_value_store.cpp
     log.hpp
     log.cpp)
+    if(USE_REDIS) 
+    target_link_libraries(${_target}
+    ${_REDIS}
+    ${_TACOPIE})
+    endif()
   target_link_libraries(${_target}
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF}
+    
     stdc++fs)
 endforeach()

@@ -22,7 +22,7 @@
 #include <thread>
 #include <vector>
 
-// #define KV_REDIS_
+#define KV_REDIS_
 
 #include "./key_value_store.h"
 #include "./log.hpp"

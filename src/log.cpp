@@ -1,5 +1,7 @@
 #include "log.hpp"
 
+std::string INVALID_LOG = "INVALID_LOG";
+
 Log::Log(std::string name) : filename(name + "_log.txt"), max_index(0) {}
 
 bool Log::put(const int index, const std::string& term_operand) {
@@ -30,7 +32,7 @@ int Log::getMaxIndex() { return max_index; }
 
 std::string Log::getByIndex(const int index) {
     if ((index > max_index) || (index < 0)) {
-        return "invalidLog";
+        return INVALID_LOG;
     }
     return store_[index];
 }
@@ -50,7 +52,7 @@ int Log::getTermByIndex(const int index) {
 
 std::string Log::getCommandByIndex(const int index) {
     if ((index > max_index) || (index < 0)) {
-        return "invalidLog";
+        return INVALID_LOG;
     }
     std::string term_command = store_[index];
     size_t pos = term_command.find('_');
@@ -59,7 +61,7 @@ std::string Log::getCommandByIndex(const int index) {
             term_command.substr(pos + 1, term_command.size() - pos - 1);
         return command;
     }
-    return "invalidLog";
+    return INVALID_LOG;
 }
 
 std::string Log::transferCommand(const std::string& behavior,

@@ -48,7 +48,7 @@ enum Role { LEADER, FOLLOWER, CANDIDATE };
 constexpr int HEARTBEAT_INTERVAL = 50;
 // TODO: too short -> start election before receive first heartbeat
 constexpr int MIN_ELECTION_TIMEOUT = 1200;
-constexpr int MAX_ELECTION_TIMEOUT = 2000;
+constexpr int MAX_ELECTION_TIMEOUT = 3000;
 bool test_without_election = false;
 class KVRaftServer final : public KVRaft::Service {
    public:
@@ -70,6 +70,9 @@ class KVRaftServer final : public KVRaft::Service {
 
     Status Get(ServerContext* context, const GetRequest* request,
                GetResponse* response) override;
+    
+    Status UpdateCommit(ServerContext* context, const CommitRequest* request,
+                    CommitResponse* response) override;
 
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
@@ -78,19 +81,22 @@ class KVRaftServer final : public KVRaft::Service {
     bool ClientRequestVote(shared_ptr<KVRaft::Stub> stub_,
                            const std::string receive_name,
                            const string candidate_name,
-                           const int last_log_index, const int last_log_term);
+                           const int last_log_index, const int last_log_term, int& max_term);
 
     bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log& log_entries,
                              bool is_heartbeat, int prev_log_index,
                              int prev_log_term, int commit_index, int msg_term);
 
+    bool ClientUpdateCommit(shared_ptr<KVRaft::Stub> stub_, int commit_index_);
+
     std::string ClientSayHello(const std::string& user);
     // server thread
     void server_loop();
     // server function
-    bool send_append_entries(bool is_heartbeat, bool send_commit);
+    bool send_append_entries(bool is_heartbeat);
     void start_election();
     void check_vote();
+    bool send_update_commit();
 
     std::string applied_log(int commitable_index);
 

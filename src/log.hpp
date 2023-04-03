@@ -8,6 +8,8 @@
 
 using namespace std;
 
+extern std::string INVALID_LOG;
+
 class Log {
    public:
     

@@ -113,3 +113,20 @@ void Log::writeToDisk() {
     }
     file.close();
 }
+
+// bool Log::readFromDIsk() {
+//     std::ifstream file(filename);
+//     if (!file.is_open()) {
+//         std::cout << "Error opening file " << filename << " for reading"
+//                   << std::endl;
+//         return false;
+//     }
+//     int index;
+//     std::string term_operand;
+//     while (file >> index >> term_operand) {
+//         store_[index] = term_operand;
+//         max_index = std::max(max_index, index);
+//     }
+//     file.close();
+//     return true;
+// }

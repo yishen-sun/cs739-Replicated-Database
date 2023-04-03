@@ -22,6 +22,7 @@ class Log {
     std::string getCommandByIndex(const int index);
     std::string transferCommand(const std::string& behavior, const std::string& key, const std::string& value);
     void writeToDisk();
+    // bool readFromDIsk();
     void parseCommand(const std::string& command, std::string& behavior, std::string& arg1, std::string& arg2); // interface to extract data
     
    private:

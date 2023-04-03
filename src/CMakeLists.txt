@@ -81,6 +81,8 @@ foreach(_target
     kvraft_grpc_server.h
     key_value_store.h
     key_value_store.cpp
+    key_value_store_vote.h
+    key_value_store_vote.cpp
     log.hpp
     log.cpp)
     if(USE_REDIS) 

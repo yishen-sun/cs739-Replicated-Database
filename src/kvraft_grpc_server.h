@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "./key_value_store.h"
+#include "./key_value_store_vote.h"
 #include "./log.hpp"
 #include "kvraft.grpc.pb.h"
 
@@ -70,9 +71,9 @@ class KVRaftServer final : public KVRaft::Service {
 
     Status Get(ServerContext* context, const GetRequest* request,
                GetResponse* response) override;
-    
+
     Status UpdateCommit(ServerContext* context, const CommitRequest* request,
-                    CommitResponse* response) override;
+                        CommitResponse* response) override;
 
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
@@ -81,7 +82,8 @@ class KVRaftServer final : public KVRaft::Service {
     bool ClientRequestVote(shared_ptr<KVRaft::Stub> stub_,
                            const std::string receive_name,
                            const string candidate_name,
-                           const int last_log_index, const int last_log_term, int& max_term);
+                           const int last_log_index, const int last_log_term,
+                           int& max_term);
 
     bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log& log_entries,
                              bool is_heartbeat, int prev_log_index,
@@ -108,8 +110,9 @@ class KVRaftServer final : public KVRaft::Service {
         raft_client_stubs_;  // k = addr:port, v = stub_
     unordered_map<std::string, std::string>
         server_config;  // k = name A, v = addr:port 0.0.0.0:50001
-    
-    unordered_map<std::string, bool> check_alive; // k = addr:port, v = true for live false for unavailable
+
+    unordered_map<std::string, bool>
+        check_alive;  // k = addr:port, v = true for live false for unavailable
 
     unordered_map<std::string, bool> vote_result;  // k = name, v = vote or not;
 
@@ -119,9 +122,9 @@ class KVRaftServer final : public KVRaft::Service {
     // Timeout
     std::chrono::time_point<std::chrono::high_resolution_clock> election_timer;
     // persistent state on servers
-    int term;                            // currentTerm
-    string voted_for;                    // TODO: persistent state
-    KeyValueStore persistent_voted_for;  // key = term, v = vote for addr
+    int term;                                // currentTerm
+    string voted_for;                        // TODO: persistent state
+    KeyValueStoreVote persistent_voted_for;  // key = term, v = vote for addr
     Log logs;
 
     string leader_addr;

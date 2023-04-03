@@ -548,6 +548,9 @@ bool KVRaftServer::send_append_entries(bool is_heartbeat) {
                 check_majority += 1;
             } else {
                 check_alive[cur_server] = false;
+                // TODO:: should be delete after complete read persistent log ?
+                next_index[cur_server] = 1;
+                match_index[cur_server] = 0;
             }
         } 
        
@@ -718,6 +721,10 @@ void KVRaftServer::state_machine_loop() {
         std::this_thread::sleep_for(
             std::chrono::milliseconds(HEARTBEAT_INTERVAL));
         while (commit_index >= last_applied && identity == Role::FOLLOWER) {
+            while (logs.getMaxIndex() < commit_index) {
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(200));
+            }
             applied_log(commit_index);
         }
     }

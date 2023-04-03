@@ -48,13 +48,15 @@ void KVRaftServer::RunServer() {
     // threads
     thread server_thread(&KVRaftServer::server_loop, this);
     thread state_machine_thread(&KVRaftServer::state_machine_loop, this);
-    thread election_timer_thread(&KVRaftServer::election_timer_loop, this);
     thread heartbeat_thread(&KVRaftServer::leader_heartbeat_loop, this);
+    std::this_thread::sleep_for(
+            std::chrono::milliseconds(HEARTBEAT_INTERVAL*10));
+    thread election_timer_thread(&KVRaftServer::election_timer_loop, this);
 
     server_thread.join();
     heartbeat_thread.join();
-    election_timer_thread.join();
     state_machine_thread.join();
+    election_timer_thread.join();
 }
 
 bool KVRaftServer::read_server_config() {
@@ -674,13 +676,15 @@ void KVRaftServer::election_timer_loop() {
             start_election();
         }
         // if (election_timer <= sleep_start && get_identity() == Role::CANDIDATE) {
-        if (election_timer <= sleep_start && identity == Role::CANDIDATE) {
+        else if (election_timer <= sleep_start && identity == Role::CANDIDATE) {
             // if a period of time goes by with no winner
             cout << "I'm follower now 678" << endl;
             identity = Role::FOLLOWER;
             // set_identity(Role::FOLLOWER);
             // voted_for.clear();
             vote_result.clear();
+        } else {
+            cout << "identity=" << identity << endl;
         }
     }
 }

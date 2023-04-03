@@ -7,6 +7,7 @@
 #include "kvraft.grpc.pb.h"
 #include "log.hpp"
 #include <random>
+#include <thread>
 
 using grpc::Channel;
 using grpc::ClientContext;

@@ -2,11 +2,9 @@
 
 std::string NO_MASTER_YET = "NO_MASTER_YET";
 
-KeyValueStoreClient::KeyValueStoreClient(std::string target_str){
-        grpc::ChannelArguments channel_args;
-        channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
-        channel_ = grpc::CreateCustomChannel(target_str, grpc::InsecureChannelCredentials(), channel_args);
-        stub_ = KVRaft::NewStub(channel_);
+KeyValueStoreClient::KeyValueStoreClient(std::string config_path): config_path(config_path){
+        read_server_config();
+        random_pick_server();
     }
 
 bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) {
@@ -37,7 +35,9 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
                 stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
             }
         } else {
-            return false;
+            stub_.release();
+            sleep(1);
+            random_pick_server();
         }
     }
 }
@@ -68,7 +68,9 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
                 stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
             }
         } else {
-            return false;
+            stub_.release();
+            sleep(1);
+            random_pick_server();
         }
     }
 
@@ -96,4 +98,36 @@ std::string KeyValueStoreClient::SayHello(const std::string& user) {
         // std::cout << status.error_code() << ": " << status.error_message() << std::endl;
         return "RPC failed";
     }
+}
+
+bool KeyValueStoreClient::read_server_config() {
+    // file format:
+    // <name>/<addr> e.g. A/0.0.0.0:50001
+    std::ifstream infile(config_path);
+    std::string line;
+    while (std::getline(infile, line)) {
+        size_t pos = line.find('/');
+        if (pos != std::string::npos) {
+            std::string key = line.substr(0, pos);
+            std::string value = line.substr(pos + 1, line.size() - pos - 1);
+            server_config[key] = value;
+        }
+    }
+    return true;
+}
+
+void KeyValueStoreClient::random_pick_server() {
+    auto random_server = std::next(std::begin(server_config), rand_between(0, server_config.size()));
+    grpc::ChannelArguments channel_args;
+    channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
+    channel_ = grpc::CreateCustomChannel(random_server->second, grpc::InsecureChannelCredentials(), channel_args);
+    stub_ = KVRaft::NewStub(channel_);
+}
+
+
+int KeyValueStoreClient::rand_between(int start, int end) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(start, end);
+    return dis(gen);
 }

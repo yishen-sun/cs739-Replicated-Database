@@ -1,6 +1,6 @@
 #include "throughtput.hpp"
 
-ThroughputTest::ThroughputTest(std::string potential_master_addr): client_(potential_master_addr) {
+ThroughputTest::ThroughputTest(std::string config_path): client_(config_path) {
 
 }
 
@@ -73,9 +73,9 @@ void ThroughputTest::run_get_operation(int num_iterations) {
 
 int main(int argc, char** argv) {
     if (argc != 5) {
-        std::cout << "you must provide four arguments: master_addr, iteration, key_length, value_length"
+        std::cout << "you must provide four arguments: config_path, iteration, key_length, value_length"
                   << std::endl;
-        std::cout << "Usage: ./throughput 0.0.0.0:50001 10000 1000 1000" << std::endl;
+        std::cout << "Usage: ./throughput ./src/server_config.txt 10000 1000 1000" << std::endl;
         return 0;
     }
     ThroughputTest tt(argv[1]);

@@ -6,6 +6,7 @@
 #include <string>
 #include "kvraft.grpc.pb.h"
 #include "log.hpp"
+#include <random>
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -20,7 +21,7 @@ using kvraft::HelloReply;
 
 class KeyValueStoreClient {
    public:
-    KeyValueStoreClient(std::string target_str);
+    KeyValueStoreClient(std::string config_path);
 
     bool Put(const std::string& key, const std::string& value);
 
@@ -31,5 +32,11 @@ class KeyValueStoreClient {
    private:
     std::unique_ptr<KVRaft::Stub> stub_;
     std::shared_ptr<Channel> channel_;
+    std::string config_path;
+    unordered_map<std::string, std::string>
+        server_config; // k = name A, v = addr:port 0.0.0.0:50001
+    bool read_server_config();
+    void random_pick_server();
+    int rand_between(int start, int end);
 };
 

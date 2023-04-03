@@ -5,12 +5,12 @@ using namespace std;
 
 int main(int argc, char** argv) {
     if (argc != 2) {
-        std::cout << "you must provide three arguments: addr" << std::endl;
-        std::cout << "For example: 0.0.0.0:50001" << std::endl;
+        std::cout << "you must provide one arguments: config_path" << std::endl;
+        std::cout << "Usage: ./cli_client ./src/server_config.txt" << std::endl;
         return 0;
     }
-    string target_str = argv[1];
-    KeyValueStoreClient kv(target_str);
+    string config_path = argv[1];
+    KeyValueStoreClient kv(config_path);
     // std::string reply;  // = kv.SayHello(user);
     // bool success;
     // success = kv.Get("test1", reply);

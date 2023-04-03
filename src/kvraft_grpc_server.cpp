@@ -133,12 +133,14 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request,
         // after entry applied to state machine applied to local log
         logs.put(logs.getMaxIndex() + 1,
                  to_string(term) + "_" + logs.transferCommand("Put", k, v));
+        std::cout << "send append entries" << std::endl;
         while (send_append_entries(false) == false){
             ;
         }
         commit_index += 1;
         // apply to state machine
         // std::cout << "start to apply" << std::endl;
+        std::cout << "send update commit" << std::endl;
         while (send_update_commit() == false) {
             ;
         }
@@ -298,9 +300,9 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     leader_addr = server_config[req_leader_name];
 
     if (request->entries().size() == 0) {
-        std::cout << "heartbeat received" << std::endl;
-        std::cout << "follower term is " << term << std::endl;
-        std::cout << "follower req_term is " << req_term << std::endl;
+        // std::cout << "heartbeat received" << std::endl;
+        // std::cout << "follower term is " << term << std::endl;
+        // std::cout << "follower req_term is " << req_term << std::endl;
         // TODO: trigger hearbeat timeout reset
         if (term < req_term) {
             term = req_term;
@@ -364,6 +366,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
 
 Status KVRaftServer::UpdateCommit(ServerContext* context, const CommitRequest* request,
                     CommitResponse* response) {
+    std::cout << "receieve update commit" << std::endl;
     response->set_success(false);
     if (commit_index < request->commit_index()) {
         commit_index = request->commit_index();

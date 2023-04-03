@@ -25,7 +25,8 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
             if (response.master_addr() == NO_MASTER_YET) {
                 // sleep and retries
                 std::cout << "NO_MASTER_YET" << std::endl;
-                sleep(0.2);
+                std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
             } else {
                 // update stub channel
                 std::cout << "update stub channel" << std::endl;
@@ -36,7 +37,8 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
             }
         } else {
             stub_.release();
-            sleep(1);
+            std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
             random_pick_server();
         }
     }
@@ -60,7 +62,8 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
             if (response.master_addr() == NO_MASTER_YET) {
                 // sleep and retries
                 std::cout << "NO_MASTER_YET" << std::endl;
-                sleep(0.2);
+                std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
             } else {
                 std::cout << "update stub channel" << std::endl;
                 std::string master_addr = response.master_addr();
@@ -69,7 +72,8 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
             }
         } else {
             stub_.release();
-            sleep(1);
+            std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
             random_pick_server();
         }
     }

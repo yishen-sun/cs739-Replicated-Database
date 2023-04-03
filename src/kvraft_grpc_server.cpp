@@ -22,7 +22,7 @@ KVRaftServer::KVRaftServer(std::string name, std::string addr,
         // TODO: init index
         next_index["server_b"] = 1;
     } else {
-        cout << "I'm follower now" << endl;
+        cout << "I'm follower now 25" << endl;
         identity = Role::FOLLOWER;
         // set_identity(Role::FOLLOWER);
     }
@@ -222,11 +222,11 @@ Status KVRaftServer::RequestVote(ServerContext* context,
     }
     if (identity == Role::LEADER) {
         // if (get_identity() == Role::LEADER) {
-        cout << "deny0" << endl;
+        cout << "deny because I'm leader" << endl;
         return Status::OK;
     }
     if (term > req_term) {
-        cout << "deny1" << endl;
+        cout << "deny because I have larger term" << endl;
         return Status::OK;
     }
     // persistent_voted_for
@@ -241,7 +241,7 @@ Status KVRaftServer::RequestVote(ServerContext* context,
                  << " logs max index: " << logs.getMaxIndex()
                  << " last log term: "
                  << logs.getTermByIndex(logs.getMaxIndex()) << endl;
-            cout << "deny2" << endl;
+            cout << "deny because I have larger last log term or larger last log index" << endl;
         } else {
             // grant vote
             persistent_voted_for.Put(to_string(term), req_candidate_name);
@@ -282,11 +282,12 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     string req_leader_name = request->leader_name();
     can_vote = false;
     // heartbeat
+
     election_timer = std::chrono::high_resolution_clock::now();
     // convert to follower
     if (identity == Role::CANDIDATE && term <= req_term) {
         can_vote = false;
-        cout << "I'm follower now" << endl;
+        cout << "I'm follower now 289" << endl;
         identity = Role::FOLLOWER;
         // set_identity(Role::FOLLOWER);
         // voted_for.clear();
@@ -300,7 +301,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     leader_addr = server_config[req_leader_name];
 
     if (request->entries().size() == 0) {
-        // std::cout << "heartbeat received" << std::endl;
+        std::cout << "heartbeat received" << std::endl;
         // std::cout << "follower term is " << term << std::endl;
         // std::cout << "follower req_term is " << req_term << std::endl;
         // TODO: trigger hearbeat timeout reset
@@ -398,6 +399,7 @@ bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_,
             if (term < response.term()) {
                 // step back if other server have higher term
                 identity = Role::FOLLOWER;
+                cout << "I'm follower now 401" << endl;
                 // set_identity(Role::FOLLOWER);
             }
             return true;
@@ -423,6 +425,7 @@ bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_,
             // step back if other server have higher term
             term = response.term();
             identity = Role::FOLLOWER;
+            cout << "I'm follower now 427" << endl;
             // return ClientAppendEntries(stub_, logs, is_heartbeat,
             //                            prev_log_index, prev_log_term,
             //                            commit_index, term);
@@ -462,6 +465,7 @@ bool KVRaftServer::ClientRequestVote(shared_ptr<KVRaft::Stub> stub_,
             int res_term_int = static_cast<int>(response.term());
             max_term = std::max(max_term, res_term_int);
             identity = Role::FOLLOWER;
+            cout << "I'm follower now 467" << endl;
             // set_identity(Role::FOLLOWER);
         }
         if (response.vote_granted()) {
@@ -484,7 +488,7 @@ void KVRaftServer::check_vote() {
     }
     if (voted_n * 2 > total_voter_n) {
         // become leader
-        cout << "I'm leader now" << endl;
+        cout << "I'm leader now 490" << endl;
         if (identity == Role::CANDIDATE) identity = Role::LEADER;
         // change_identity(Role::LEADER, Role::CANDIDATE);
         // voted_for.clear();
@@ -672,7 +676,7 @@ void KVRaftServer::election_timer_loop() {
         // if (election_timer <= sleep_start && get_identity() == Role::CANDIDATE) {
         if (election_timer <= sleep_start && identity == Role::CANDIDATE) {
             // if a period of time goes by with no winner
-            cout << "I'm follower now" << endl;
+            cout << "I'm follower now 678" << endl;
             identity = Role::FOLLOWER;
             // set_identity(Role::FOLLOWER);
             // voted_for.clear();
@@ -686,6 +690,7 @@ void KVRaftServer::start_election() {
     std::cout << "starting election" << std::endl;
     leader_addr.clear();
     identity = Role::CANDIDATE;
+    cout << "I'm candidate now 692" << endl;
     // change_identity(Role::CANDIDATE, Role::FOLLOWER);
     term++;
     if (!persistent_voted_for.Get(to_string(term)).empty()) {

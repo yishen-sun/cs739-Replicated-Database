@@ -12,7 +12,8 @@ KVRaftServer::KVRaftServer(std::string name, std::string addr,
       commit_index(0),
       persistent_voted_for(name + "_vote_for.txt"),
       state_machine_interface(name + "_state_machine.txt"),
-      can_vote(true) {
+      can_vote(true)
+       {
     if (test_without_election) {
         std::cout << "Test without election." << std::endl;
         (name == "server_a") ? identity = Role::LEADER
@@ -26,7 +27,9 @@ KVRaftServer::KVRaftServer(std::string name, std::string addr,
         identity = Role::FOLLOWER;
         // set_identity(Role::FOLLOWER);
     }
-
+    election_timer = std::chrono::high_resolution_clock::now();
+    prev_heartbeat = election_timer;
+    random_election_duration = std::chrono::milliseconds(random_election_timeout());
     read_server_config();
     update_stubs_();
 }
@@ -41,22 +44,58 @@ void KVRaftServer::server_loop() {
 
     std::unique_ptr<Server> server(builder.BuildAndStart());
     std::cout << "Raft server listening on " << addr << std::endl;
-    server->Wait();
+    // heartbeat clock
+    // election clock
+    while (true) {
+        //get
+        auto cur_time = std::chrono::high_resolution_clock::now();
+        auto heartbeat_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(cur_time - prev_heartbeat);
+        auto election_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(cur_time - election_timer);
+        if (identity == Role::LEADER) {
+            if (heartbeat_duration_ms > 15ms) {
+                send_append_entries(true);
+                prev_heartbeat = cur_time;
+            }
+        } else if (identity == Role::FOLLOWER) {
+            if (heartbeat_duration_ms > 2000ms && can_vote == false) {
+                std::cout << "No receive heartbeat, turn to can vote and prepare for election" << std::endl;
+                can_vote = true;
+                leader_addr.clear();
+                prev_heartbeat = cur_time;
+                election_timer = cur_time;
+                random_election_duration = std::chrono::milliseconds(random_election_timeout());
+            } else if (election_duration_ms > random_election_duration && can_vote) {
+                std::cout << "Waiting for random period and turn to candidate" << std::endl;
+                identity = Role::CANDIDATE;
+                prev_heartbeat = cur_time;
+                can_vote = false;
+                start_election();
+            }
+        } else if (identity == Role::CANDIDATE) {
+            if (heartbeat_duration_ms > 500ms) {
+                std::cout << "No result: step down" << std::endl;
+                identity = Role::FOLLOWER;
+            }
+        } else {
+            std::cout << "error" << std::endl;
+        }
+
+    }
 }
 
 void KVRaftServer::RunServer() {
     // threads
     thread server_thread(&KVRaftServer::server_loop, this);
     thread state_machine_thread(&KVRaftServer::state_machine_loop, this);
-    thread heartbeat_thread(&KVRaftServer::leader_heartbeat_loop, this);
-    std::this_thread::sleep_for(
-            std::chrono::milliseconds(HEARTBEAT_INTERVAL*10));
-    thread election_timer_thread(&KVRaftServer::election_timer_loop, this);
+    // thread heartbeat_thread(&KVRaftServer::leader_heartbeat_loop, this);
+    // std::this_thread::sleep_for(
+    //         std::chrono::milliseconds(HEARTBEAT_INTERVAL*10));
+    // thread election_timer_thread(&KVRaftServer::election_timer_loop, this);
 
     server_thread.join();
-    heartbeat_thread.join();
+    // heartbeat_thread.join();
     state_machine_thread.join();
-    election_timer_thread.join();
+    // election_timer_thread.join();
 }
 
 bool KVRaftServer::read_server_config() {
@@ -143,9 +182,9 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request,
         // apply to state machine
         // std::cout << "start to apply" << std::endl;
         std::cout << "send update commit" << std::endl;
-        while (send_update_commit() == false) {
-            ;
-        }
+        // while (send_update_commit() == false) {
+        //     ;
+        // }
         applied_log(commit_index);
         // std::cout << "applied success" << std::endl;
         response->set_success(0);
@@ -192,9 +231,9 @@ Status KVRaftServer::Get(ServerContext* context, const GetRequest* request,
         }
         commit_index += 1;
         
-        while (send_update_commit() == false) {
-            ;
-        };
+        // while (send_update_commit() == false) {
+        //     ;
+        // };
         result = applied_log(commit_index);
         response->set_success(0);
         response->set_value(result);
@@ -250,7 +289,8 @@ Status KVRaftServer::RequestVote(ServerContext* context,
             response->set_vote_granted(true);
 
             // heartbeat
-            election_timer = std::chrono::high_resolution_clock::now();
+            can_vote = false;
+            prev_heartbeat = std::chrono::high_resolution_clock::now();
         }
         return Status::OK;
     }
@@ -280,12 +320,16 @@ Status KVRaftServer::RequestVote(ServerContext* context,
 Status KVRaftServer::AppendEntries(ServerContext* context,
                                    const AppendEntriesRequest* request,
                                    AppendEntriesResponse* response) {
+    std::cout << "rec append entries" << std::endl;
     int req_term = request->term();
     string req_leader_name = request->leader_name();
+    int req_leader_commit = request->leader_commit();
+    std::cout << "AppendEntries from " << req_leader_name << std::endl;
+
     can_vote = false;
     // heartbeat
 
-    election_timer = std::chrono::high_resolution_clock::now();
+    prev_heartbeat = std::chrono::high_resolution_clock::now();
     // convert to follower
     if (identity == Role::CANDIDATE && term <= req_term) {
         can_vote = false;
@@ -295,6 +339,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
         // voted_for.clear();
         vote_result.clear();
     } else if (identity == Role::CANDIDATE) {
+        std::cout << "candidate don't want to response to leader" << std::endl;
         can_vote = true;
         response->set_term(term);
         response->set_success(false);
@@ -303,13 +348,14 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     leader_addr = server_config[req_leader_name];
 
     if (request->entries().size() == 0) {
-        std::cout << "heartbeat received" << std::endl;
+        std::cout << "heartbeat received from " << req_leader_name << std::endl;
         // std::cout << "follower term is " << term << std::endl;
         // std::cout << "follower req_term is " << req_term << std::endl;
         // TODO: trigger hearbeat timeout reset
         if (term < req_term) {
             term = req_term;
         }
+        commit_index = req_leader_commit;
         response->set_term(term);
         response->set_success(true);
         return Status::OK;
@@ -317,7 +363,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     // get remain data from the the leader's request
     int req_prev_log_index = request->prev_log_index();
     int req_prev_log_term = request->prev_log_term();
-    int req_leader_commit = request->leader_commit();
+    
     vector<LogEntry> req_entries;
     LogEntry log_entry;
     for (const auto& tmp_log_entry : request->entries()) {
@@ -367,23 +413,23 @@ Status KVRaftServer::AppendEntries(ServerContext* context,
     return Status::OK;
 }
 
-Status KVRaftServer::UpdateCommit(ServerContext* context, const CommitRequest* request,
-                    CommitResponse* response) {
-    std::cout << "receieve update commit" << std::endl;
-    response->set_success(false);
-    if (commit_index < request->commit_index()) {
-        commit_index = request->commit_index();
-        response->set_success(true);
-    } 
-    return Status::OK;
-}
+// Status KVRaftServer::UpdateCommit(ServerContext* context, const CommitRequest* request,
+//                     CommitResponse* response) {
+//     std::cout << "receieve update commit" << std::endl;
+//     response->set_success(false);
+//     if (commit_index < request->commit_index()) {
+//         commit_index = request->commit_index();
+//         response->set_success(true);
+//     } 
+//     return Status::OK;
+// }
 
 // -------------------------------------------------------------------------------------------------
 // GRPC Client API
 bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_,
                                        Log& log_entries, bool is_heartbeat,
                                        int prev_log_index, int prev_log_term,
-                                       int commit_index, int msg_term) {
+                                       int commit_index_, int msg_term) {
     AppendEntriesRequest request;
     AppendEntriesResponse response;
     Status status;
@@ -393,9 +439,10 @@ bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_,
     request.set_leader_name(name);
     request.set_prev_log_index(prev_log_index);
     request.set_prev_log_term(prev_log_term);
-    request.set_leader_commit(commit_index);
+    request.set_leader_commit(commit_index_);
 
     if (is_heartbeat) {
+        std::cout << "send heartbeat inside clientAppendEntries" << std::endl;
         status = stub_->AppendEntries(&context, request, &response);
         if (status.ok() && response.success() == true) {
             if (term < response.term()) {
@@ -450,6 +497,7 @@ bool KVRaftServer::ClientRequestVote(shared_ptr<KVRaft::Stub> stub_,
     RequestVoteResponse response;
     Status status;
     ClientContext context;
+    context.set_deadline(std::chrono::system_clock::now() + std::chrono::milliseconds(100));
 
     request.set_term(term);
     request.set_candidate_name(candidate_name);
@@ -513,26 +561,26 @@ bool KVRaftServer::ClientUpdateCommit(shared_ptr<KVRaft::Stub> stub_, int commit
 }
 
 // Server function API
-bool KVRaftServer::send_update_commit() {
-    int commit_server_cnt = 1;
-    int total_server_cnt = 1;
-    for (const auto& pair : raft_client_stubs_) {
-        total_server_cnt++;
-        const std::string cur_server = pair.first;
-        std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
+// bool KVRaftServer::send_update_commit() {
+//     int commit_server_cnt = 1;
+//     int total_server_cnt = 1;
+//     for (const auto& pair : raft_client_stubs_) {
+//         total_server_cnt++;
+//         const std::string cur_server = pair.first;
+//         std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
 
-        if (match_index[cur_server] >= commit_index) {
-            while (ClientUpdateCommit(cur_stub_, commit_index) != true) {
-                ;
-            }
-            commit_server_cnt++;
-        }
-    }
-    if (commit_server_cnt * 2 > total_server_cnt) {
-        return true;
-    }
-    return false;
-}
+//         if (match_index[cur_server] >= commit_index) {
+//             while (ClientUpdateCommit(cur_stub_, commit_index) != true) {
+//                 ;
+//             }
+//             commit_server_cnt++;
+//         }
+//     }
+//     if (commit_server_cnt * 2 > total_server_cnt) {
+//         return true;
+//     }
+//     return false;
+// }
 
 bool KVRaftServer::send_append_entries(bool is_heartbeat) {
     Role cur_identity = identity;
@@ -543,18 +591,22 @@ bool KVRaftServer::send_append_entries(bool is_heartbeat) {
         std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
         total_server += 1;
         if (is_heartbeat == true) {
-            // std::cout << "send heartbeat to: " << cur_server << std::endl;
+            std::cout << "send heartbeat to: " << cur_server << std::endl;
             if (cur_identity != identity) return false;
             // if (cur_identity != get_identity()) return false;
             bool res;
-            res = ClientAppendEntries(cur_stub_, logs, is_heartbeat, -1, -1, -1,
+            res = ClientAppendEntries(cur_stub_, logs, is_heartbeat, -1, -1, commit_index,
                                 term);
+            std::cout << "result for " << cur_server << " is " << res << std::endl;
             if (res) {
                 check_alive[cur_server] = true;
                 check_majority += 1;
             } else {
                 check_alive[cur_server] = false;
                 // TODO:: should be delete after complete read persistent log ?
+                raft_client_stubs_[cur_server].reset();
+                raft_client_stubs_[cur_server] = KVRaft::NewStub(grpc::CreateChannel(cur_server, grpc::InsecureChannelCredentials()));
+
                 next_index[cur_server] = 1;
                 match_index[cur_server] = 0;
             }
@@ -639,19 +691,19 @@ Status KVRaftServer::SayHello(ServerContext* context,
 }
 // -------------------------------------------------------------------------------------------------
 // Heartbeat interval API
-void KVRaftServer::leader_heartbeat_loop() {
-    std::cout << "leader heartbeat thread starts" << std::endl;
-    while (true) {
-        if (identity == Role::LEADER) {
-        // if (get_identity() == Role::LEADER) {
-            // std::cout << "heartbeat thread is sending a heartbeat" <<
-            // std::endl; std::cout << "leader term: " << term << std::endl;
-            send_append_entries(true);
-        }
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds(HEARTBEAT_INTERVAL));
-    }
-}
+// void KVRaftServer::leader_heartbeat_loop() {
+//     std::cout << "leader heartbeat thread starts" << std::endl;
+//     while (true) {
+//         if (identity == Role::LEADER) {
+//         // if (get_identity() == Role::LEADER) {
+//             // std::cout << "heartbeat thread is sending a heartbeat" <<
+//             // std::endl; std::cout << "leader term: " << term << std::endl;
+//             send_append_entries(true);
+//         }
+//         std::this_thread::sleep_for(
+//             std::chrono::milliseconds(HEARTBEAT_INTERVAL));
+//     }
+// }
 // -------------------------------------------------------------------------------------------------
 // Election timeout API
 int KVRaftServer::random_election_timeout() {
@@ -662,38 +714,38 @@ int KVRaftServer::random_election_timeout() {
     return dist(gen);
 }
 
-void KVRaftServer::election_timer_loop() {
-    // TODO: rewrite -> follower become can vote -> follower become candidate
-    std::cout << "election timer thread starts" << std::endl;
-    while (true) {
-        auto sleep_start = std::chrono::high_resolution_clock::now();
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds(random_election_timeout()));
-        if (election_timer <= sleep_start && identity == Role::FOLLOWER) {
-        // if (election_timer <= sleep_start && get_identity() == Role::FOLLOWER) {
-            // if during sleep time, the server recieve appendEntries,
-            can_vote = true;
-            start_election();
-        }
-        // if (election_timer <= sleep_start && get_identity() == Role::CANDIDATE) {
-        else if (election_timer <= sleep_start && identity == Role::CANDIDATE) {
-            // if a period of time goes by with no winner
-            cout << "I'm follower now 678" << endl;
-            identity = Role::FOLLOWER;
-            // set_identity(Role::FOLLOWER);
-            // voted_for.clear();
-            vote_result.clear();
-        } else {
-            cout << "identity=" << identity << endl;
-        }
-    }
-}
+// void KVRaftServer::election_timer_loop() {
+//     // TODO: rewrite -> follower become can vote -> follower become candidate
+//     std::cout << "election timer thread starts" << std::endl;
+//     while (true) {
+//         auto sleep_start = std::chrono::high_resolution_clock::now();
+//         std::this_thread::sleep_for(
+//             std::chrono::milliseconds(random_election_timeout()));
+//         if (election_timer <= sleep_start && identity == Role::FOLLOWER) {
+//         // if (election_timer <= sleep_start && get_identity() == Role::FOLLOWER) {
+//             // if during sleep time, the server recieve appendEntries,
+//             can_vote = true;
+//             start_election();
+//         }
+//         // if (election_timer <= sleep_start && get_identity() == Role::CANDIDATE) {
+//         else if (election_timer <= sleep_start && identity == Role::CANDIDATE) {
+//             // if a period of time goes by with no winner
+//             cout << "I'm follower now 678" << endl;
+//             identity = Role::FOLLOWER;
+//             // set_identity(Role::FOLLOWER);
+//             // voted_for.clear();
+//             vote_result.clear();
+//         } else {
+//             cout << "identity=" << identity << endl;
+//         }
+//     }
+// }
 // -------------------------------------------------------------------------------------------------
 // Election API
 void KVRaftServer::start_election() {
     std::cout << "starting election" << std::endl;
-    leader_addr.clear();
-    identity = Role::CANDIDATE;
+    
+    // identity = Role::CANDIDATE;
     cout << "I'm candidate now 692" << endl;
     // change_identity(Role::CANDIDATE, Role::FOLLOWER);
     term++;

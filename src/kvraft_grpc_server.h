@@ -48,8 +48,8 @@ using namespace std::chrono_literals;
 enum Role { LEADER, FOLLOWER, CANDIDATE };
 constexpr int HEARTBEAT_INTERVAL = 50;
 // TODO: too short -> start election before receive first heartbeat
-constexpr int MIN_ELECTION_TIMEOUT = 1200;
-constexpr int MAX_ELECTION_TIMEOUT = 3000;
+constexpr int MIN_ELECTION_TIMEOUT = 1000;
+constexpr int MAX_ELECTION_TIMEOUT = 5000;
 bool test_without_election = false;
 class KVRaftServer final : public KVRaft::Service {
    public:
@@ -72,8 +72,8 @@ class KVRaftServer final : public KVRaft::Service {
     Status Get(ServerContext* context, const GetRequest* request,
                GetResponse* response) override;
 
-    Status UpdateCommit(ServerContext* context, const CommitRequest* request,
-                        CommitResponse* response) override;
+    // Status UpdateCommit(ServerContext* context, const CommitRequest* request,
+    //                     CommitResponse* response) override;
 
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
@@ -87,7 +87,7 @@ class KVRaftServer final : public KVRaft::Service {
 
     bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log& log_entries,
                              bool is_heartbeat, int prev_log_index,
-                             int prev_log_term, int commit_index, int msg_term);
+                             int prev_log_term, int commit_index_, int msg_term);
 
     bool ClientUpdateCommit(shared_ptr<KVRaft::Stub> stub_, int commit_index_);
 
@@ -98,7 +98,7 @@ class KVRaftServer final : public KVRaft::Service {
     bool send_append_entries(bool is_heartbeat);
     void start_election();
     void check_vote();
-    bool send_update_commit();
+    // bool send_update_commit();
 
     std::string applied_log(int commitable_index);
 
@@ -121,6 +121,8 @@ class KVRaftServer final : public KVRaft::Service {
     string addr;
     // Timeout
     std::chrono::time_point<std::chrono::high_resolution_clock> election_timer;
+    std::chrono::time_point<std::chrono::high_resolution_clock> prev_heartbeat;
+    std::chrono::milliseconds random_election_duration;
     // persistent state on servers
     int term;                                // currentTerm
     string voted_for;                        // TODO: persistent state

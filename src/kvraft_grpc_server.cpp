@@ -10,7 +10,9 @@ KVRaftServer::KVRaftServer(std::string name, std::string addr, std::string confi
       last_applied(0),
       commit_index(0),
       persistent_voted_for(name + "_vote_for.txt"),
+#ifndef USE_REDIS
       state_machine_interface(name + "_state_machine.txt"),
+#endif
       can_vote(true) {
     cout << "I'm follower now (line 16 - init)" << endl;
     identity = Role::FOLLOWER;

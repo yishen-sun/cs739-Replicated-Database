@@ -9,7 +9,7 @@
 #include <thread>
 
 #include "kvraft.grpc.pb.h"
-#include "log.hpp"
+#include "log.h"
 
 using grpc::Channel;
 using grpc::ClientContext;

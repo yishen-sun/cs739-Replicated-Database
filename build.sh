@@ -1,17 +1,19 @@
-if [ -z "$1" ]; then
-    echo "The first argument is empty."
+if [ "$1" = "basic" ]; then
+    echo "The second argument is basic."
     mkdir -p build
     cd build
     cmake ../src
     make
     cd ..
-else
-    echo "The first argument is not empty."
+elif [ "$1" = "redis" ]; then
+    echo "The second argument is redis."
     mkdir -p build
     cd build
     cmake ../src -D USE_REDIS=ON
     make
     cd ..
+else
+    echo "You should input redis or basic as the second argument."
 fi
 
 

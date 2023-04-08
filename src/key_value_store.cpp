@@ -33,8 +33,7 @@ bool KeyValueStore::Delete(const std::string& key) {
 void KeyValueStore::writeToDisk() {
     std::ofstream file(filename);
     if (!file.is_open()) {
-        std::cout << "Error opening file " << filename << " for writing"
-                  << std::endl;
+        std::cout << "Error opening file " << filename << " for writing" << std::endl;
         return;
     }
     for (const auto& entry : store_) {
@@ -50,8 +49,7 @@ KeyValueStore::KeyValueStore(std::string fname) : filename(fname) {
     // Connect to the Redis server
     client.connect(
         "127.0.0.1", 6379,
-        [](const std::string& host, std::size_t port,
-           cpp_redis::client::connect_state status) {
+        [](const std::string& host, std::size_t port, cpp_redis::client::connect_state status) {
             if (status == cpp_redis::client::connect_state::dropped) {
                 std::cerr << "Connection to Redis dropped" << std::endl;
             } else {

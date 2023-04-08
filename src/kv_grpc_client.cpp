@@ -2,26 +2,26 @@
 
 std::string NO_MASTER_YET = "NO_MASTER_YET";
 
-KeyValueStoreClient::KeyValueStoreClient(std::string config_path): config_path(config_path){
-        grpc::ChannelArguments channel_args;
-        channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
-        channel_ = grpc::CreateCustomChannel(config_path, grpc::InsecureChannelCredentials(), channel_args);
-        stub_ = KVRaft::NewStub(channel_);
-        // read_server_config();
-        // random_pick_server();
-    }
+KeyValueStoreClient::KeyValueStoreClient(std::string config_path) : config_path(config_path) {
+    grpc::ChannelArguments channel_args;
+    channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
+    channel_ =
+        grpc::CreateCustomChannel(config_path, grpc::InsecureChannelCredentials(), channel_args);
+    stub_ = KVRaft::NewStub(channel_);
+    // read_server_config();
+    // random_pick_server();
+}
 
 bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) {
-
     while (true) {
         PutRequest request;
         request.set_key(key);
         request.set_value(value);
 
         PutResponse response;
-        
+
         Status status;
-    
+
         ClientContext context;
         context.set_deadline(std::chrono::system_clock::now() + std::chrono::milliseconds(100));
         status = stub_->Put(&context, request, &response);
@@ -39,7 +39,8 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
             //     stub_.release();
             //     std::string master_addr = response.master_addr();
             //     std::cout << master_addr << std::endl;
-            //     stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
+            //     stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr,
+            //     grpc::InsecureChannelCredentials()));
             // }
         } else {
             return false;
@@ -55,9 +56,9 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
     while (true) {
         GetRequest request;
         request.set_key(key);
-        
+
         GetResponse response;
-        
+
         Status status;
         ClientContext context;
         context.set_deadline(std::chrono::system_clock::now() + std::chrono::milliseconds(100));
@@ -76,7 +77,8 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
             //     std::cout << "update stub channel" << std::endl;
             //     std::string master_addr = response.master_addr();
             //     std::cout << master_addr << std::endl;
-            //     stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr, grpc::InsecureChannelCredentials()));
+            //     stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr,
+            //     grpc::InsecureChannelCredentials()));
             // }
             return false;
         } else {
@@ -88,9 +90,7 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
             return false;
         }
     }
-
 }
-
 
 std::string KeyValueStoreClient::SayHello(const std::string& user) {
     HelloRequest request;
@@ -132,13 +132,14 @@ bool KeyValueStoreClient::read_server_config() {
 }
 
 void KeyValueStoreClient::random_pick_server() {
-    auto random_server = std::next(std::begin(server_config), rand_between(0, server_config.size()));
+    auto random_server =
+        std::next(std::begin(server_config), rand_between(0, server_config.size()));
     grpc::ChannelArguments channel_args;
     channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
-    channel_ = grpc::CreateCustomChannel(random_server->second, grpc::InsecureChannelCredentials(), channel_args);
+    channel_ = grpc::CreateCustomChannel(random_server->second, grpc::InsecureChannelCredentials(),
+                                         channel_args);
     stub_ = KVRaft::NewStub(channel_);
 }
-
 
 int KeyValueStoreClient::rand_between(int start, int end) {
     static std::random_device rd;

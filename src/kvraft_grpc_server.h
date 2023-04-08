@@ -23,8 +23,8 @@
 #include <vector>
 
 #include "./key_value_store.h"
-#include "./key_value_store_vote.h"
-#include "./log.hpp"
+// #include "./key_value_store_vote.h"
+#include "./log.h"
 #include "kvraft.grpc.pb.h"
 
 using grpc::ClientContext;
@@ -93,8 +93,11 @@ class KVRaftServer final : public KVRaft::Service {
 
    private:
     Role identity;
-
-    KeyValueStore state_machine_interface;
+#ifndef USE_REDIS
+    BasicKeyValueStore state_machine_interface;
+#else
+    RedisKeyValueStore state_machine_interface;
+#endif
     unordered_map<std::string, std::shared_ptr<KVRaft::Stub>>
         raft_client_stubs_;  // k = addr:port, v = stub_
     unordered_map<std::string, std::string>
@@ -113,9 +116,9 @@ class KVRaftServer final : public KVRaft::Service {
     std::chrono::time_point<std::chrono::high_resolution_clock> prev_heartbeat;
     std::chrono::milliseconds random_election_duration;
     // persistent state on servers
-    int term;                                // currentTerm
-    string voted_for;                        // TODO: persistent state
-    KeyValueStoreVote persistent_voted_for;  // key = term, v = vote for addr
+    int term;                                 // currentTerm
+    string voted_for;                         // TODO: persistent state
+    BasicKeyValueStore persistent_voted_for;  // key = term, v = vote for addr
     Log logs;
 
     string leader_addr;

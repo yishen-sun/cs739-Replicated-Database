@@ -1,4 +1,4 @@
-#include "log.hpp"
+#include "log.h"
 
 std::string INVALID_LOG = "INVALID_LOG";
 

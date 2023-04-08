@@ -1,0 +1,36 @@
+basic version
+
+
+1000 100 100
+Put operation completed:1000 kv pairs in 7863667 microseconds
+Get operation completed 1000 kv pairs in 6350287 microseconds
+
+Put operation completed:1000 kv pairs in 7958664 microseconds
+Get operation completed 1000 kv pairs in 6394953 microseconds
+
+Put operation completed:1000 kv pairs in 7933763 microseconds
+Get operation completed 1000 kv pairs in 6375561 microseconds
+
+Put operation completed:1000 kv pairs in 7987380 microseconds
+Get operation completed 1000 kv pairs in 6485888 microseconds
+
+Put operation completed:1000 kv pairs in 7853161 microseconds
+Get operation completed 1000 kv pairs in 6312993 microseconds
+
+Put operation completed:1000 kv pairs in 7988943 microseconds
+Get operation completed 1000 kv pairs in 6379661 microseconds
+
+Put operation completed:1000 kv pairs in 7936727 microseconds
+Get operation completed 1000 kv pairs in 6401253 microseconds
+
+Put operation completed:1000 kv pairs in 7977077 microseconds
+Get operation completed 1000 kv pairs in 6368574 microseconds
+
+Put operation completed:1000 kv pairs in 7911314 microseconds
+Get operation completed 1000 kv pairs in 6376085 microseconds
+
+Put operation completed:1000 kv pairs in 7864933 microseconds
+Get operation completed 1000 kv pairs in 6337425 microseconds
+
+Redis version
+

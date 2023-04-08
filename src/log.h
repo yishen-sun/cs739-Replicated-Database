@@ -21,10 +21,11 @@ class Log {
     std::string getCommandByIndex(const int index);
     std::string transferCommand(const std::string& behavior, const std::string& key,
                                 const std::string& value);
-    void writeToDisk();
-    // bool readFromDIsk();
+    void overwriteToDisk();
+    void appendToDisk(int index);
     void parseCommand(const std::string& command, std::string& behavior, std::string& arg1,
                       std::string& arg2);  // interface to extract data
+    bool readFromDisk();
 
    private:
     // TODO: unordered_map<int, pair<int,string>>

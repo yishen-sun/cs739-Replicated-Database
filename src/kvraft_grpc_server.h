@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "./key_value_store.h"
-// #include "./key_value_store_vote.h"
 #include "./log.h"
 #include "kvraft.grpc.pb.h"
 
@@ -48,8 +47,18 @@ using namespace std::chrono_literals;
 enum Role { LEADER, FOLLOWER, CANDIDATE };
 constexpr int HEARTBEAT_INTERVAL = 50;
 // TODO: too short -> start election before receive first heartbeat
-constexpr int MIN_ELECTION_TIMEOUT = 1000;
-constexpr int MAX_ELECTION_TIMEOUT = 5000;
+constexpr int MIN_ELECTION_TIMEOUT = 500;
+constexpr int MAX_ELECTION_TIMEOUT = 1000;
+
+#define RESET "\033[0m"
+#define BLACK "\033[30m"   /* Black */
+#define RED "\033[31m"     /* Red */
+#define GREEN "\033[32m"   /* Green */
+#define YELLOW "\033[33m"  /* Yellow */
+#define BLUE "\033[34m"    /* Blue */
+#define MAGENTA "\033[35m" /* Magenta */
+#define CYAN "\033[36m"    /* Cyan */
+#define WHITE "\033[37m"   /* White */
 
 class KVRaftServer final : public KVRaft::Service {
    public:

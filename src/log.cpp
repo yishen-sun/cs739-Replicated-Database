@@ -2,7 +2,9 @@
 
 std::string INVALID_LOG = "INVALID_LOG";
 
-Log::Log(std::string name) : filename(name + "_log.txt"), max_index(0) { readFromDisk(); }
+Log::Log(std::string name) : filename(name + "_log.txt"), max_index(0) {
+    // readFromDisk();
+}
 
 bool Log::put(const int index, const std::string& term_operand) {
     if (max_index + 1 != index) {
@@ -112,7 +114,7 @@ void Log::overwriteToDisk() {
 }
 
 void Log::appendToDisk(int index) {
-    cout << "append called" << endl;
+    // cout << "append called" << endl;
     std::ofstream file(filename, std::ios::app);
     if (!file.is_open()) {
         std::cout << "Error opening file " << filename << " for writing" << std::endl;

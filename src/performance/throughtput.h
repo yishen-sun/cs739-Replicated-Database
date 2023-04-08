@@ -9,7 +9,7 @@ using namespace std;
 
 class ThroughputTest {
    public:
-    ThroughputTest(std::string config_path);
+    ThroughputTest(std::string leader_addr);
 
     void run_test(int num_iterations, int key_length, int value_length);
     

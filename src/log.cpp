@@ -2,7 +2,9 @@
 
 std::string INVALID_LOG = "INVALID_LOG";
 
-Log::Log(std::string name) : filename(name + "_log.txt"), max_index(0) { readFromDisk(); }
+Log::Log(std::string name) : filename(name + "_log.txt"), max_index(0) {
+    // readFromDisk();
+}
 
 bool Log::put(const int index, const std::string& term_operand) {
     if (max_index + 1 != index) {

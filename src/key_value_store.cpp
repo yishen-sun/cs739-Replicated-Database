@@ -64,12 +64,12 @@ bool RedisKeyValueStore::Put(const std::string& key, const std::string& value) {
 
 std::string RedisKeyValueStore::Get(const std::string& key) {
     std::string result;
-    std::cout << "The key " << key << std::endl;
+    // std::cout << "The key " << key << std::endl;
     client.get(key, [&result](cpp_redis::reply& reply) {
         if (reply.is_null()) {
             std::cout << "The key doesn't exist" << std::endl;
         } else {
-            std::cout << "Retrieved value: " << reply.as_string() << std::endl;
+            // std::cout << "Retrieved value: " << reply.as_string() << std::endl;
             result = reply.as_string();
         }
     });

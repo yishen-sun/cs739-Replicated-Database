@@ -2,7 +2,7 @@
 
 std::string INVALID_LOG = "INVALID_LOG";
 
-Log::Log(std::string name) : filename(name + "_log.txt"), max_index(0) {}
+Log::Log(std::string name) : filename(name + "_log.txt"), max_index(0) { readFromDisk(); }
 
 bool Log::put(const int index, const std::string& term_operand) {
     if (max_index + 1 != index) {
@@ -11,7 +11,7 @@ bool Log::put(const int index, const std::string& term_operand) {
     // modify the shared data
     store_[index] = term_operand;
     max_index = index;
-    writeToDisk();
+    appendToDisk(index);
     return true;
 }
 
@@ -24,7 +24,7 @@ bool Log::removeAfterIndex(const int index) {
         store_.erase(i);
     }
     max_index = index - 1;
-    writeToDisk();
+    overwriteToDisk();
     return true;
 }
 
@@ -99,7 +99,7 @@ void Log::parseCommand(const std::string& command, std::string& behavior, std::s
     }
 }
 
-void Log::writeToDisk() {
+void Log::overwriteToDisk() {
     std::ofstream file(filename);
     if (!file.is_open()) {
         std::cout << "Error opening file " << filename << " for writing" << std::endl;
@@ -111,19 +111,28 @@ void Log::writeToDisk() {
     file.close();
 }
 
-// bool Log::readFromDIsk() {
-//     std::ifstream file(filename);
-//     if (!file.is_open()) {
-//         std::cout << "Error opening file " << filename << " for reading"
-//                   << std::endl;
-//         return false;
-//     }
-//     int index;
-//     std::string term_operand;
-//     while (file >> index >> term_operand) {
-//         store_[index] = term_operand;
-//         max_index = std::max(max_index, index);
-//     }
-//     file.close();
-//     return true;
-// }
+void Log::appendToDisk(int index) {
+    cout << "append called" << endl;
+    std::ofstream file(filename, std::ios::app);
+    if (!file.is_open()) {
+        std::cout << "Error opening file " << filename << " for writing" << std::endl;
+        return;
+    }
+    file << index << " " << store_[index] << std::endl;
+    file.close();
+}
+bool Log::readFromDisk() {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cout << "Error opening file " << filename << " for reading" << std::endl;
+        return false;
+    }
+    int index;
+    std::string term_operand;
+    while (file >> index >> term_operand) {
+        store_[index] = term_operand;
+        max_index = std::max(max_index, index);
+    }
+    file.close();
+    return true;
+}

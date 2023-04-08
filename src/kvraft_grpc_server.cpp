@@ -5,7 +5,7 @@ KVRaftServer::KVRaftServer(std::string name, std::string addr, std::string confi
     : name(name),
       addr(addr),
       config_path(config_path),
-      logs(Log(name)),
+      logs(name),
       term(0),
       last_applied(0),
       commit_index(0),
@@ -220,11 +220,11 @@ Status KVRaftServer::RequestVote(ServerContext* context, const RequestVoteReques
 
 Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRequest* request,
                                    AppendEntriesResponse* response) {
-    std::cout << "rec append entries" << std::endl;
+    // std::cout << "rec append entries" << std::endl;
     int req_term = request->term();
     string req_leader_name = request->leader_name();
     int req_leader_commit = request->leader_commit();
-    std::cout << "AppendEntries from " << req_leader_name << std::endl;
+    // std::cout << "AppendEntries from " << req_leader_name << std::endl;
 
     can_vote = false;
     // heartbeat
@@ -246,9 +246,9 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
     leader_addr = server_config[req_leader_name];
 
     if (request->entries().size() == 0) {
-        std::cout << "heartbeat received from " << req_leader_name << std::endl;
-        // std::cout << "follower term is " << term << std::endl;
-        // std::cout << "follower req_term is " << req_term << std::endl;
+        // std::cout << "heartbeat received from " << req_leader_name << std::endl;
+        //  std::cout << "follower term is " << term << std::endl;
+        //  std::cout << "follower req_term is " << req_term << std::endl;
         if (term < req_term) {
             term = req_term;
         }
@@ -325,7 +325,7 @@ bool KVRaftServer::ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log& log_
     request.set_leader_commit(commit_index_);
 
     if (is_heartbeat) {
-        std::cout << "send heartbeat inside clientAppendEntries" << std::endl;
+        // std::cout << "send heartbeat inside clientAppendEntries" << std::endl;
         status = stub_->AppendEntries(&context, request, &response);
         if (status.ok() && response.success() == true) {
             if (term < response.term()) {
@@ -426,12 +426,12 @@ bool KVRaftServer::send_append_entries(bool is_heartbeat) {
         std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
         total_server += 1;
         if (is_heartbeat == true) {
-            std::cout << "send heartbeat to: " << cur_server << std::endl;
+            // std::cout << "send heartbeat to: " << cur_server << std::endl;
             if (cur_identity != identity) return false;
             // if (cur_identity != get_identity()) return false;
             bool res;
             res = ClientAppendEntries(cur_stub_, logs, is_heartbeat, -1, -1, commit_index, term);
-            std::cout << "result for " << cur_server << " is " << res << std::endl;
+            // std::cout << "result for " << cur_server << " is " << res << std::endl;
             if (res) {
                 check_alive[cur_server] = true;
                 check_majority += 1;

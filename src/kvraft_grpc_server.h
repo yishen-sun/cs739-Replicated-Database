@@ -50,7 +50,7 @@ constexpr int HEARTBEAT_INTERVAL = 50;
 // TODO: too short -> start election before receive first heartbeat
 constexpr int MIN_ELECTION_TIMEOUT = 1000;
 constexpr int MAX_ELECTION_TIMEOUT = 5000;
-bool test_without_election = false;
+
 class KVRaftServer final : public KVRaft::Service {
    public:
     // Constructor
@@ -58,38 +58,27 @@ class KVRaftServer final : public KVRaft::Service {
     //
     void RunServer();
     // grpc server part
-    Status RequestVote(ServerContext* context,
-                       const RequestVoteRequest* request,
+    Status RequestVote(ServerContext* context, const RequestVoteRequest* request,
                        RequestVoteResponse* response) override;
 
-    Status AppendEntries(ServerContext* context,
-                         const AppendEntriesRequest* request,
+    Status AppendEntries(ServerContext* context, const AppendEntriesRequest* request,
                          AppendEntriesResponse* response) override;
 
-    Status Put(ServerContext* context, const PutRequest* request,
-               PutResponse* response) override;
+    Status Put(ServerContext* context, const PutRequest* request, PutResponse* response) override;
 
-    Status Get(ServerContext* context, const GetRequest* request,
-               GetResponse* response) override;
-
-    // Status UpdateCommit(ServerContext* context, const CommitRequest* request,
-    //                     CommitResponse* response) override;
+    Status Get(ServerContext* context, const GetRequest* request, GetResponse* response) override;
 
     Status SayHello(ServerContext* context, const HelloRequest* request,
                     HelloReply* reply) override;
 
     // grpc client part
-    bool ClientRequestVote(shared_ptr<KVRaft::Stub> stub_,
-                           const std::string receive_name,
-                           const string candidate_name,
-                           const int last_log_index, const int last_log_term,
-                           int& max_term);
+    bool ClientRequestVote(shared_ptr<KVRaft::Stub> stub_, const std::string receive_name,
+                           const string candidate_name, const int last_log_index,
+                           const int last_log_term, int& max_term);
 
-    bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log& log_entries,
-                             bool is_heartbeat, int prev_log_index,
-                             int prev_log_term, int commit_index_, int msg_term);
-
-    bool ClientUpdateCommit(shared_ptr<KVRaft::Stub> stub_, int commit_index_);
+    bool ClientAppendEntries(shared_ptr<KVRaft::Stub> stub_, Log& log_entries, bool is_heartbeat,
+                             int prev_log_index, int prev_log_term, int commit_index_,
+                             int msg_term);
 
     std::string ClientSayHello(const std::string& user);
     // server thread
@@ -150,16 +139,10 @@ class KVRaftServer final : public KVRaft::Service {
 
     bool read_server_config();
     bool read_state_machine_config(std::string filename);
-    bool read_voted_for_config(std::string filename);
-    bool send_heartbeat();
+
     bool update_stubs_();
-    // heartbeats and election threads functions
-    void leader_heartbeat_loop();
     int random_election_timeout();
-    void election_timer_loop();
     void state_machine_loop();
-    // void change_identity(Role new_role, Role previous_role);
-    // Role get_identity();
-    // void set_identity(Role new_role);
-    std::mutex role_mutex;
+
+    // std::mutex role_mutex;
 };

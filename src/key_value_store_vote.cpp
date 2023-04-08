@@ -31,8 +31,7 @@ bool KeyValueStoreVote::Delete(const std::string& key) {
 void KeyValueStoreVote::writeToDisk() {
     std::ofstream file(filename);
     if (!file.is_open()) {
-        std::cout << "Error opening file " << filename << " for writing"
-                  << std::endl;
+        std::cout << "Error opening file " << filename << " for writing" << std::endl;
         return;
     }
     for (const auto& entry : store_) {

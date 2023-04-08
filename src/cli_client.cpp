@@ -1,5 +1,6 @@
-#include "./kv_grpc_client.h"
 #include <sstream>
+
+#include "./kv_grpc_client.h"
 
 using namespace std;
 
@@ -11,33 +12,6 @@ int main(int argc, char** argv) {
     }
     string config_path = argv[1];
     KeyValueStoreClient kv(config_path);
-    // std::string reply;  // = kv.SayHello(user);
-    // bool success;
-    // success = kv.Get("test1", reply);
-    // std::cout << "expected: , actual: " << reply << std::endl;
-
-    // success = kv.Get("test2", reply);
-    // std::cout << "expected: , actual: " << reply << std::endl;
-
-    // success = kv.Get("test3", reply);
-    // std::cout << "expected: , actual: " << reply << std::endl;
-
-    // success = kv.Put("test1", "test_reply");
-
-    // success = kv.Put("test2", "test2_reply");
-
-    // success = kv.Put("test3", "test3_reply");
-
-    // std::cout << "Put done" << std::endl;
-
-    // success = kv.Get("test1", reply);
-    // std::cout << "expected: test_reply, actual: " << reply << std::endl;
-    // success = kv.Get("test2", reply);
-    // std::cout << "expected: test2_reply, actual: " << reply << std::endl;
-    // success = kv.Get("test3", reply);
-    // std::cout << "expected: test3_reply, actual: " << reply << std::endl;
-
-    // success = kv.Put("test4", "test4_reply");
 
     std::string input;
     std::string key, value, result;

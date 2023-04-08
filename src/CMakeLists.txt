@@ -83,7 +83,7 @@ foreach(_target
     key_value_store.cpp
     key_value_store_vote.h
     key_value_store_vote.cpp
-    log.hpp
+    log.h
     log.cpp)
     if(USE_REDIS) 
     target_link_libraries(${_target}
@@ -107,7 +107,7 @@ foreach(_target
     ${hw_grpc_srcs}
     kv_grpc_client.h
     kv_grpc_client.cpp
-    ./performance/throughtput.hpp)
+    ./performance/throughtput.h)
   target_link_libraries(${_target}
     ${_REFLECTION}
     ${_GRPC_GRPCPP}

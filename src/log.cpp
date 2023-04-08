@@ -57,15 +57,13 @@ std::string Log::getCommandByIndex(const int index) {
     std::string term_command = store_[index];
     size_t pos = term_command.find('_');
     if (pos != std::string::npos) {
-        std::string command =
-            term_command.substr(pos + 1, term_command.size() - pos - 1);
+        std::string command = term_command.substr(pos + 1, term_command.size() - pos - 1);
         return command;
     }
     return INVALID_LOG;
 }
 
-std::string Log::transferCommand(const std::string& behavior,
-                                 const std::string& key,
+std::string Log::transferCommand(const std::string& behavior, const std::string& key,
                                  const std::string& value) {
     if (behavior == "Put") {
         return std::string("P@K=" + key + "@V=" + value);
@@ -76,8 +74,8 @@ std::string Log::transferCommand(const std::string& behavior,
     }
 }
 
-void Log::parseCommand(const std::string& command, std::string& behavior,
-                       std::string& key, std::string& val) {
+void Log::parseCommand(const std::string& command, std::string& behavior, std::string& key,
+                       std::string& val) {
     // P@K=test1@V=test_reply
     size_t pos1 = command.find('@');
     size_t pos2 = command.find('=');
@@ -104,8 +102,7 @@ void Log::parseCommand(const std::string& command, std::string& behavior,
 void Log::writeToDisk() {
     std::ofstream file(filename);
     if (!file.is_open()) {
-        std::cout << "Error opening file " << filename << " for writing"
-                  << std::endl;
+        std::cout << "Error opening file " << filename << " for writing" << std::endl;
         return;
     }
     for (const auto& entry : store_) {

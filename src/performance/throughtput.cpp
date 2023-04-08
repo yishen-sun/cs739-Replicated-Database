@@ -1,6 +1,8 @@
 #include "throughtput.h"
 
-ThroughputTest::ThroughputTest(std::string config_path) : client_(config_path) {}
+ThroughputTest::ThroughputTest(std::string leader_addr): client_(leader_addr) {
+
+}
 
 void ThroughputTest::run_test(int num_iterations, int key_length, int value_length) {
     prepare_testcase(num_iterations, key_length, value_length);
@@ -40,44 +42,47 @@ void ThroughputTest::prepare_testcase(int num_iterations, int key_length, int va
 // Run the Put operation for a specified number of iterations
 void ThroughputTest::run_put_operation(int num_iterations) {
     auto start_time = std::chrono::high_resolution_clock::now();
-
+    bool res = true;
     for (const auto& entry : test_case) {
-        client_.Put(entry.first, entry.second);
+        res = (client_.Put(entry.first, entry.second) || res);
     }
 
     auto end_time = std::chrono::high_resolution_clock::now();
 
-    auto duration =
-        std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+    if (res == false) {
+        std::cout << "Failed to execute commands" << std::endl;
+        exit(0);
+    }
 
-    std::cout << "Put operation completed " << num_iterations << " iterations in " << duration
-              << " microseconds" << std::endl;
+    std::cout << "Put operation completed:" << num_iterations << " kv pairs in " << duration << " microseconds" << std::endl;
 }
 
 // Run the Get operation for a specified number of iterations
 void ThroughputTest::run_get_operation(int num_iterations) {
     std::string result;
     auto start_time = std::chrono::high_resolution_clock::now();
-
+    bool res = true;
     for (const auto& entry : test_case) {
-        client_.Get(entry.first, result);
+        res = (client_.Get(entry.first, result) || res);
     }
 
     auto end_time = std::chrono::high_resolution_clock::now();
 
-    auto duration =
-        std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-
-    std::cout << "Get operation completed " << num_iterations << " iterations in " << duration
-              << " microseconds" << std::endl;
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+    
+    if (res == false) {
+        std::cout << "Failed to execute commands" << std::endl;
+        exit(0);
+    }
+    std::cout << "Get operation completed " << num_iterations << " kv pairs in " << duration << " microseconds" << std::endl;
 }
 
 int main(int argc, char** argv) {
     if (argc != 5) {
-        std::cout
-            << "you must provide four arguments: config_path, iteration, key_length, value_length"
-            << std::endl;
-        std::cout << "Usage: ./throughput ./src/server_config.txt 10000 1000 1000" << std::endl;
+        std::cout << "you must provide four arguments: server_addr, iteration, key_length, value_length"
+                  << std::endl;
+        std::cout << "Usage: ./throughput 0.0.0.0:50001 10000 1000 1000" << std::endl;
         return 0;
     }
     ThroughputTest tt(argv[1]);

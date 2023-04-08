@@ -87,7 +87,7 @@ void KVRaftServer::server_loop() {
                 election_timer = cur_time;
                 random_election_duration = std::chrono::milliseconds(random_election_timeout());
             } else if (election_duration_ms > random_election_duration && can_vote) {
-                std::cout << "Waiting for random period and turn to candidate" << std::endl;
+                // std::cout << "Waiting for random period and turn to candidate" << std::endl;
                 identity = Role::CANDIDATE;
                 prev_heartbeat = cur_time;
                 can_vote = false;
@@ -95,7 +95,7 @@ void KVRaftServer::server_loop() {
             }
         } else if (identity == Role::CANDIDATE) {
             if (heartbeat_duration_ms > 500ms) {
-                std::cout << "No result: step down" << std::endl;
+                // std::cout << "No result: step down" << std::endl;
                 identity = Role::FOLLOWER;
             }
         } else {
@@ -237,7 +237,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
         identity = Role::FOLLOWER;
         vote_result.clear();
     } else if (identity == Role::CANDIDATE) {
-        std::cout << "candidate don't want to response to leader" << std::endl;
+        // std::cout << "candidate don't want to response to leader" << std::endl;
         can_vote = true;
         response->set_term(term);
         response->set_success(false);
@@ -299,7 +299,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
     }
     // The follower updates its commitIndex according to the leader_commit
     // field, applying any newly committed entries to its state machine.
-    std::cout << "Update commit from: " << commit_index << " to " << req_leader_commit << std::endl;
+    // std::cout << "Update commit from: " << commit_index << " to " << req_leader_commit << std::endl;
     commit_index = req_leader_commit;
     // Finally, the follower sends a response to the leader,
     // indicating whether the AppendEntries RPC was successful or not.
@@ -491,10 +491,10 @@ std::string KVRaftServer::applied_log(int commitable_index) {
         std::string key;
         std::string val;
         logs.parseCommand(command, behavior, key, val);
-        std::cout << "last applied index: " << last_applied + 1 << std::endl;
+        // std::cout << "last applied index: " << last_applied + 1 << std::endl;
 
-        std::cout << "command: " << command << " b: " << behavior << " key: " << key
-                  << " val: " << val << std::endl;
+        // std::cout << "command: " << command << " b: " << behavior << " key: " << key
+        //           << " val: " << val << std::endl;
         if (behavior == "P") {
             state_machine_interface.Put(key, val);
         } else if (behavior == "G") {

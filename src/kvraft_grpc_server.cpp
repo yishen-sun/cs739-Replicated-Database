@@ -122,14 +122,14 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request, PutR
         // If command received from client: append entry to local log, respond
         // after entry applied to state machine applied to local log
         logs.put(logs.getMaxIndex() + 1, to_string(term) + "_" + logs.transferCommand("Put", k, v));
-        std::cout << "send append entries" << std::endl;
+        // std::cout << "send append entries" << std::endl;
         while (send_append_entries(false) == false) {
             ;
         }
         commit_index += 1;
         // apply to state machine
         // std::cout << "start to apply" << std::endl;
-        std::cout << "send update commit" << std::endl;
+        // std::cout << "send update commit" << std::endl;
         applied_log(commit_index);
         response->set_success(0);
     } else {

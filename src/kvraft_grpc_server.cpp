@@ -115,7 +115,7 @@ void KVRaftServer::RunServer() {
 // -------------------------------------------------------------------------------------------------
 // GRPC Server API
 Status KVRaftServer::Put(ServerContext* context, const PutRequest* request, PutResponse* response) {
-    std::cout << "KVRaftServer::put" << std::endl;
+    // std::cout << "KVRaftServer::put" << std::endl;
     std::string k(request->key());
     std::string v(request->value());
     if (identity == Role::LEADER) {
@@ -144,7 +144,7 @@ Status KVRaftServer::Put(ServerContext* context, const PutRequest* request, PutR
 }
 
 Status KVRaftServer::Get(ServerContext* context, const GetRequest* request, GetResponse* response) {
-    std::cout << "KVRaftServer::get" << std::endl;
+    // std::cout << "KVRaftServer::get" << std::endl;
 
     std::string k(request->key());
     std::string v;
@@ -299,7 +299,8 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
     }
     // The follower updates its commitIndex according to the leader_commit
     // field, applying any newly committed entries to its state machine.
-    // std::cout << "Update commit from: " << commit_index << " to " << req_leader_commit << std::endl;
+    // std::cout << "Update commit from: " << commit_index << " to " << req_leader_commit <<
+    // std::endl;
     commit_index = req_leader_commit;
     // Finally, the follower sends a response to the leader,
     // indicating whether the AppendEntries RPC was successful or not.

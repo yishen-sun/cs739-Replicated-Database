@@ -114,7 +114,7 @@ void Log::overwriteToDisk() {
 }
 
 void Log::appendToDisk(int index) {
-    cout << "append called" << endl;
+    // cout << "append called" << endl;
     std::ofstream file(filename, std::ios::app);
     if (!file.is_open()) {
         std::cout << "Error opening file " << filename << " for writing" << std::endl;

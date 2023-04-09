@@ -498,7 +498,8 @@ std::string KVRaftServer::applied_log(int commitable_index) {
         logs.parseCommand(command, behavior, key, val);
         // std::cout << "last applied index: " << last_applied + 1 << std::endl;
 
-        std::cout << "Command: " << behavior << " key: " << key << " val: " << val << std::endl;
+        std::cout << MAGENTA << "Command: " << behavior << " key: " << key << " val: " << val
+                  << RESET << std::endl;
         if (behavior == "P") {
             state_machine_interface.Put(key, val);
         } else if (behavior == "G") {

@@ -32,7 +32,7 @@ one node version
 ```
 three nodes version
 ```
-./release/cli_client amd1310.utah.cloudlab.us:50001
+./release/cli_client ms1310.utah.cloudlab.us:50001
 ./release/kvraft_grpc_server server_a ms1310.utah.cloudlab.us:50001 ./three_server_config.txt
 ./release/kvraft_grpc_server server_b ms1317.utah.cloudlab.us:50001 ./three_server_config.txt
 ./release/kvraft_grpc_server server_c ms1343.utah.cloudlab.us:50001 ./three_server_config.txt

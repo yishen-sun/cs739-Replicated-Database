@@ -2,13 +2,13 @@
 
 std::string NO_MASTER_YET = "NO_MASTER_YET";
 
-KeyValueStoreClient::KeyValueStoreClient(std::string config_path) : config_path(config_path) {
+KeyValueStoreClient::KeyValueStoreClient(std::string config_path, std::string assigned_port) : config_path(config_path), assigned_port(assigned_port) {
     grpc::ChannelArguments channel_args;
     channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
     channel_ =
-        grpc::CreateCustomChannel(config_path, grpc::InsecureChannelCredentials(), channel_args);
+        grpc::CreateCustomChannel(assigned_port, grpc::InsecureChannelCredentials(), channel_args);
     stub_ = KVRaft::NewStub(channel_);
-    // read_server_config();
+    read_server_config();
     // random_pick_server();
 }
 
@@ -27,27 +27,26 @@ bool KeyValueStoreClient::Put(const std::string& key, const std::string& value) 
         status = stub_->Put(&context, request, &response);
         if (status.ok()) {
             if (response.success() == 0) return true;
-            return false;
-            // if (response.master_addr() == NO_MASTER_YET) {
-            //     // sleep and retries
-            //     std::cout << "NO_MASTER_YET" << std::endl;
-            //     std::this_thread::sleep_for(
-            // std::chrono::milliseconds(1000));
-            // } else {
-            //     // update stub channel
-            //     std::cout << "update stub channel" << std::endl;
-            //     stub_.release();
-            //     std::string master_addr = response.master_addr();
-            //     std::cout << master_addr << std::endl;
-            //     stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr,
-            //     grpc::InsecureChannelCredentials()));
-            // }
+            if (response.master_addr() == NO_MASTER_YET) {
+                // sleep and retries
+                std::cout << "NO_MASTER_YET" << std::endl;
+                std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
+            } else {
+                // update stub channel
+                std::cout << "update stub channel" << std::endl;
+                stub_.release();
+                std::string master_addr = response.master_addr();
+                std::cout << master_addr << std::endl;
+                stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr,
+                grpc::InsecureChannelCredentials()));
+            }
         } else {
-            return false;
-            // stub_.release();
-            // std::this_thread::sleep_for(
-            // std::chrono::milliseconds(1000));
-            // random_pick_server();
+            // return false;
+            stub_.reset();
+            std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
+            random_pick_server();
         }
     }
 }
@@ -68,26 +67,24 @@ bool KeyValueStoreClient::Get(const std::string& key, std::string& result) {
                 result = response.value();
                 return true;
             }
-            // if (response.master_addr() == NO_MASTER_YET) {
-            //     // sleep and retries
-            //     std::cout << "NO_MASTER_YET" << std::endl;
-            //     std::this_thread::sleep_for(
-            // std::chrono::milliseconds(1000));
-            // } else {
-            //     std::cout << "update stub channel" << std::endl;
-            //     std::string master_addr = response.master_addr();
-            //     std::cout << master_addr << std::endl;
-            //     stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr,
-            //     grpc::InsecureChannelCredentials()));
-            // }
-            return false;
+            if (response.master_addr() == NO_MASTER_YET) {
+                // sleep and retries
+                std::cout << "NO_MASTER_YET" << std::endl;
+                std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
+            } else {
+                std::cout << "update stub channel" << std::endl;
+                std::string master_addr = response.master_addr();
+                std::cout << master_addr << std::endl;
+                stub_ = KVRaft::NewStub(grpc::CreateChannel(master_addr,
+                grpc::InsecureChannelCredentials()));
+            }
         } else {
             // return false;
-            // stub_.release();
-            // std::this_thread::sleep_for(
-            // std::chrono::milliseconds(1000));
-            // random_pick_server();
-            return false;
+            stub_.reset();
+            std::this_thread::sleep_for(
+            std::chrono::milliseconds(1000));
+            random_pick_server();
         }
     }
 }
@@ -133,9 +130,10 @@ bool KeyValueStoreClient::read_server_config() {
 
 void KeyValueStoreClient::random_pick_server() {
     auto random_server =
-        std::next(std::begin(server_config), rand_between(0, server_config.size()));
+        std::next(std::begin(server_config), rand_between(0, server_config.size() - 1));
     grpc::ChannelArguments channel_args;
     channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, INT_MAX);
+    std::cout << random_server->second << std::endl;
     channel_ = grpc::CreateCustomChannel(random_server->second, grpc::InsecureChannelCredentials(),
                                          channel_args);
     stub_ = KVRaft::NewStub(channel_);

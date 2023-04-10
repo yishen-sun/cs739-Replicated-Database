@@ -61,6 +61,9 @@ constexpr int MAX_ELECTION_TIMEOUT = 1000;
 #define WHITE "\033[37m"   /* White */
 
 constexpr bool NO_GET_LOGS = false;
+constexpr bool TEST_RECOVERY = true;
+constexpr int SERVER_CRASH_AFTER_N_LOGS = 500;
+std::string SHUT_DOWN_SERVER = "server_a";
 
 class KVRaftServer final : public KVRaft::Service {
    public:

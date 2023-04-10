@@ -1,13 +1,18 @@
 #include "throughtput.h"
 
-ThroughputTest::ThroughputTest(std::string leader_addr): client_(leader_addr) {
+ThroughputTest::ThroughputTest(std::string config_path, std::string leader_addr, bool test_recovery, int crash_after_n_logs): 
+        client_(config_path, leader_addr), test_recovery(test_recovery), crash_after_n_logs(crash_after_n_logs) {
 
 }
 
 void ThroughputTest::run_test(int num_iterations, int key_length, int value_length) {
     prepare_testcase(num_iterations, key_length, value_length);
-    run_put_operation(num_iterations);
-    run_get_operation(num_iterations);
+    if (test_recovery) {
+        run_put_operation(num_iterations);
+    } else {
+        run_put_operation(num_iterations);
+        run_get_operation(num_iterations);
+    }
 }
 
 // Create a random string of the specified length
@@ -43,8 +48,17 @@ void ThroughputTest::prepare_testcase(int num_iterations, int key_length, int va
 void ThroughputTest::run_put_operation(int num_iterations) {
     auto start_time = std::chrono::high_resolution_clock::now();
     bool res = true;
+    int i = 0;
     for (const auto& entry : test_case) {
+        i++;
+        auto before_crash_time = std::chrono::high_resolution_clock::now();
         res = (client_.Put(entry.first, entry.second) || res);
+        auto after_crash_time = std::chrono::high_resolution_clock::now();
+        if (i == crash_after_n_logs) {
+            std::cout << "Put operation time with server reelection is" 
+                    << std::chrono::duration_cast<std::chrono::microseconds>(after_crash_time - before_crash_time).count() 
+                    << std::endl;
+        }
     }
 
     auto end_time = std::chrono::high_resolution_clock::now();
@@ -79,14 +93,17 @@ void ThroughputTest::run_get_operation(int num_iterations) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 5) {
-        std::cout << "you must provide four arguments: server_addr, iteration, key_length, value_length"
+    if (argc != 8) {
+        std::cout << "you must provide four arguments: config_path server_addr, iteration, key_length, value_length, test_recovery, aftet_n_log_crash"
                   << std::endl;
-        std::cout << "Usage: ./throughput 0.0.0.0:50001 10000 1000 1000" << std::endl;
+        std::cout << "Usage: ./throughput one_server_config.txt 0.0.0.0:50001 10000 1000 1000 false 500" << std::endl;
         return 0;
     }
-    ThroughputTest tt(argv[1]);
-    tt.run_test(stoi(argv[2]), stoi(argv[3]), stoi(argv[4]));
+    bool test_recovery;
+    std::istringstream(argv[6]) >> std::boolalpha >> test_recovery;
+
+    ThroughputTest tt(argv[1], argv[2], test_recovery, stoi(argv[7]));
+    tt.run_test(stoi(argv[3]), stoi(argv[4]), stoi(argv[5]));
 
     return 0;
 }

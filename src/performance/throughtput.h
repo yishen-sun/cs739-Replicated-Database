@@ -3,13 +3,14 @@
 #include <string>
 #include <thread>
 #include <random>
+#include <sstream>
 #include "../kv_grpc_client.h"
 
 using namespace std;
 
 class ThroughputTest {
    public:
-    ThroughputTest(std::string leader_addr);
+    ThroughputTest(std::string config_path, std::string leader_addr, bool test_recovery, int crash_after_n_logs);
 
     void run_test(int num_iterations, int key_length, int value_length);
     
@@ -18,6 +19,8 @@ class ThroughputTest {
     KeyValueStoreClient client_;
     int num_requests_;
     int request_size_;
+    bool test_recovery;
+    int crash_after_n_logs;
     unordered_map<string, string> test_case;
 
     std::string random_string(size_t length);

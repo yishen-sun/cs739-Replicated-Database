@@ -73,12 +73,18 @@ void KVRaftServer::server_loop() {
         auto election_duration_ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(cur_time - election_timer);
         if (identity == Role::LEADER) {
-            if (heartbeat_duration_ms > 500ms) {
+            if (TEST_RECOVERY) {
+                if (logs.getMaxIndex() == SERVER_CRASH_AFTER_N_LOGS && name == SHUT_DOWN_SERVER){
+                    std::cout << RED << "TEST RECOVERY trigger exit after recording " << SERVER_CRASH_AFTER_N_LOGS << " logs." << RESET << std::endl;
+                    exit(0);
+                }
+            }
+            if (heartbeat_duration_ms > 50ms) {
                 send_append_entries(true);
                 prev_heartbeat = cur_time;
             }
         } else if (identity == Role::FOLLOWER) {
-            if (heartbeat_duration_ms > 2000ms && can_vote == false) {
+            if (heartbeat_duration_ms > 1000ms && can_vote == false) {
                 std::cout << "Didn't receive heartbeat, the node can vote and prepare for election"
                           << std::endl;
                 can_vote = true;
@@ -95,7 +101,7 @@ void KVRaftServer::server_loop() {
                 start_election();
             }
         } else if (identity == Role::CANDIDATE) {
-            if (heartbeat_duration_ms > 3000ms) {
+            if (heartbeat_duration_ms > 1000ms) {
                 std::cout << GREEN << "No result: I step down to follower" << RESET << std::endl;
                 identity = Role::FOLLOWER;
             }
@@ -307,8 +313,8 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
     }
     // The follower updates its commitIndex according to the leader_commit
     // field, applying any newly committed entries to its state machine.
-    // std::cout << "Update commit from: " << commit_index << " to " << req_leader_commit <<
-    // std::endl;
+    std::cout << "Update commit from: " << commit_index << " to " << req_leader_commit <<
+    std::endl;
     commit_index = req_leader_commit;
     // Finally, the follower sends a response to the leader,
     // indicating whether the AppendEntries RPC was successful or not.
@@ -466,7 +472,7 @@ bool KVRaftServer::send_append_entries(bool is_heartbeat) {
             int cur_next_index;
             while ((check_alive[cur_server]) && (logs.getMaxIndex() >= next_index[cur_server])) {
                 if (cur_identity != identity) return false;
-                cout << "Update followers log..." << endl;
+                // cout << "Update followers log..." << endl;
                 cur_next_index = next_index[cur_server];
                 if (ClientAppendEntries(cur_stub_, logs, is_heartbeat, cur_next_index - 1,
                                         logs.getTermByIndex(cur_next_index - 1), commit_index,

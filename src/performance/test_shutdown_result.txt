@@ -1,0 +1,13 @@
+Shutdwon after recevie 500 logs
+
+
+Put operation time with server reelection is 7163720
+Put operation time with server reelection is 3138831
+Put operation time with server reelection is 5142895
+Put operation time with server reelection is 4143388
+Put operation time with server reelection is 3143127
+Put operation time with server reelection is 3143713
+Put operation time with server reelection is 4141824
+Put operation time with server reelection is 3139731
+Put operation time with server reelection is 3143406
+Put operation time with server reelection is 3139650

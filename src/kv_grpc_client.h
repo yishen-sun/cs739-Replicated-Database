@@ -24,7 +24,7 @@ using kvraft::PutResponse;
 
 class KeyValueStoreClient {
    public:
-    KeyValueStoreClient(std::string config_path);
+    KeyValueStoreClient(std::string config_pat, std::string asigned_port);
 
     bool Put(const std::string& key, const std::string& value);
 
@@ -36,6 +36,7 @@ class KeyValueStoreClient {
     std::unique_ptr<KVRaft::Stub> stub_;
     std::shared_ptr<Channel> channel_;
     std::string config_path;
+    std::string assigned_port;
     unordered_map<std::string, std::string>
         server_config;  // k = name A, v = addr:port 0.0.0.0:50001
     bool read_server_config();

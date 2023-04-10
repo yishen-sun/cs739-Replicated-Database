@@ -60,6 +60,8 @@ constexpr int MAX_ELECTION_TIMEOUT = 1000;
 #define CYAN "\033[36m"    /* Cyan */
 #define WHITE "\033[37m"   /* White */
 
+constexpr bool NO_GET_LOGS = true;
+
 class KVRaftServer final : public KVRaft::Service {
    public:
     // Constructor

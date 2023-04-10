@@ -79,12 +79,12 @@ void KVRaftServer::server_loop() {
                     exit(0);
                 }
             }
-            if (heartbeat_duration_ms > 500ms) {
+            if (heartbeat_duration_ms > 50ms) {
                 send_append_entries(true);
                 prev_heartbeat = cur_time;
             }
         } else if (identity == Role::FOLLOWER) {
-            if (heartbeat_duration_ms > 2000ms && can_vote == false) {
+            if (heartbeat_duration_ms > 1000ms && can_vote == false) {
                 std::cout << "Didn't receive heartbeat, the node can vote and prepare for election"
                           << std::endl;
                 can_vote = true;
@@ -101,7 +101,7 @@ void KVRaftServer::server_loop() {
                 start_election();
             }
         } else if (identity == Role::CANDIDATE) {
-            if (heartbeat_duration_ms > 3000ms) {
+            if (heartbeat_duration_ms > 1000ms) {
                 std::cout << GREEN << "No result: I step down to follower" << RESET << std::endl;
                 identity = Role::FOLLOWER;
             }

@@ -467,7 +467,7 @@ bool KVRaftServer::send_append_entries(bool is_heartbeat) {
             int cur_next_index;
             while ((check_alive[cur_server]) && (logs.getMaxIndex() >= next_index[cur_server])) {
                 if (cur_identity != identity) return false;
-                cout << "Update followers log..." << endl;
+                // cout << "Update followers log..." << endl;
                 cur_next_index = next_index[cur_server];
                 if (ClientAppendEntries(cur_stub_, logs, is_heartbeat, cur_next_index - 1,
                                         logs.getTermByIndex(cur_next_index - 1), commit_index,
@@ -504,8 +504,8 @@ std::string KVRaftServer::applied_log(int commitable_index) {
         logs.parseCommand(command, behavior, key, val);
         // std::cout << "last applied index: " << last_applied + 1 << std::endl;
 
-        std::cout << MAGENTA << "Command: " << behavior << " key: " << key << " val: " << val
-                  << RESET << std::endl;
+        // std::cout << MAGENTA << "Command: " << behavior << " key: " << key << " val: " << val
+        //           << RESET << std::endl;
         if (behavior == "P") {
             state_machine_interface.Put(key, val);
         } else if (behavior == "G") {

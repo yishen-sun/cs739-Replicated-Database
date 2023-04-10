@@ -239,12 +239,12 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
     // convert to follower
     if (identity == Role::CANDIDATE && term <= req_term) {
         can_vote = false;
-        cout << GREEN << "Receive AppendEntries, I'm follower now, turn from candidate" << RESET
-             << endl;
+        // cout << GREEN << "Receive AppendEntries, I'm follower now, turn from candidate" << RESET
+        //      << endl;
         identity = Role::FOLLOWER;
         vote_result.clear();
     } else if (identity == Role::CANDIDATE) {
-        std::cout << BLUE << "Candidate doesn't want to response to leader" << RESET << std::endl;
+        // std::cout << BLUE << "Candidate doesn't want to response to leader" << RESET << std::endl;
         can_vote = true;
         response->set_term(term);
         response->set_success(false);
@@ -253,7 +253,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
     leader_addr = server_config[req_leader_name];
 
     if (request->entries().size() == 0) {
-        std::cout << "Heartbeat received from " << req_leader_name << std::endl;
+        // std::cout << "Heartbeat received from " << req_leader_name << std::endl;
         //  std::cout << "follower term is " << term << std::endl;
         //  std::cout << "follower req_term is " << req_term << std::endl;
         if (term < req_term) {
@@ -264,7 +264,7 @@ Status KVRaftServer::AppendEntries(ServerContext* context, const AppendEntriesRe
         response->set_success(true);
         return Status::OK;
     }
-    std::cout << "AppendEntries received from " << req_leader_name << std::endl;
+    // std::cout << "AppendEntries received from " << req_leader_name << std::endl;
     // get remain data from the the leader's request
     int req_prev_log_index = request->prev_log_index();
     int req_prev_log_term = request->prev_log_term();
@@ -437,7 +437,7 @@ bool KVRaftServer::send_append_entries(bool is_heartbeat) {
         std::shared_ptr<KVRaft::Stub> cur_stub_ = pair.second;
         total_server += 1;
         if (is_heartbeat == true) {
-            std::cout << "Send heartbeat to: " << cur_server << std::endl;
+            // std::cout << "Send heartbeat to: " << cur_server << std::endl;
             if (cur_identity != identity) return false;
             bool res =
                 ClientAppendEntries(cur_stub_, logs, is_heartbeat, -1, -1, commit_index, term);
@@ -503,8 +503,8 @@ std::string KVRaftServer::applied_log(int commitable_index) {
         logs.parseCommand(command, behavior, key, val);
         // std::cout << "last applied index: " << last_applied + 1 << std::endl;
 
-        std::cout << MAGENTA << "Command: " << behavior << " key: " << key << " val: " << val
-                  << RESET << std::endl;
+        // std::cout << MAGENTA << "Command: " << behavior << " key: " << key << " val: " << val
+        //           << RESET << std::endl;
         if (behavior == "P") {
             state_machine_interface.Put(key, val);
         } else if (behavior == "G") {

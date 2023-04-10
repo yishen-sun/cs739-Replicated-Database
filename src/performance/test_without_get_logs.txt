@@ -1,0 +1,33 @@
+basic version
+
+
+1000 100 100
+Put operation completed:1000 kv pairs in 7947669 microseconds
+Get operation completed 1000 kv pairs in 1773030 microseconds
+
+Put operation completed:1000 kv pairs in 7662992 microseconds
+Get operation completed 1000 kv pairs in 1748614 microseconds
+
+Put operation completed:1000 kv pairs in 7851253 microseconds
+Get operation completed 1000 kv pairs in 1775955 microseconds
+
+Put operation completed:1000 kv pairs in 7640852 microseconds
+Get operation completed 1000 kv pairs in 1811780 microseconds
+
+Put operation completed:1000 kv pairs in 7833298 microseconds
+Get operation completed 1000 kv pairs in 1762389 microseconds
+
+Put operation completed:1000 kv pairs in 7784355 microseconds
+Get operation completed 1000 kv pairs in 1754931 microseconds
+
+Put operation completed:1000 kv pairs in 7771288 microseconds
+Get operation completed 1000 kv pairs in 1714413 microseconds
+
+Put operation completed:1000 kv pairs in 7619824 microseconds
+Get operation completed 1000 kv pairs in 1743821 microseconds
+
+Put operation completed:1000 kv pairs in 7760218 microseconds
+Get operation completed 1000 kv pairs in 1793736 microseconds
+
+Put operation completed:1000 kv pairs in 7925373 microseconds
+Get operation completed 1000 kv pairs in 1794411 microseconds

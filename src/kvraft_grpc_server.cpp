@@ -153,13 +153,18 @@ Status KVRaftServer::Get(ServerContext* context, const GetRequest* request, GetR
     if (identity == Role::LEADER) {
         // If command received from client: append entry to local log, respond
         // after entry applied to state machine applied to local log
-        logs.put(logs.getMaxIndex() + 1, to_string(term) + "_" + logs.transferCommand("Get", k, v));
-        while (send_append_entries(false) == false) {
-            ;
-        }
-        commit_index += 1;
+        if (!NO_GET_LOGS) {
+            logs.put(logs.getMaxIndex() + 1, to_string(term) + "_" + logs.transferCommand("Get", k, v));
+            while (send_append_entries(false) == false) {
+                ;
+            }
+            commit_index += 1;
 
-        result = applied_log(commit_index);
+            result = applied_log(commit_index);
+        } else {
+            // apply directly:
+            result = state_machine_interface.Get(k);
+        }
         response->set_success(0);
         response->set_value(result);
     } else {

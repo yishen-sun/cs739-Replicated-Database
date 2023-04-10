@@ -1,0 +1,1 @@
+Shutdwon after recevie 500 logs

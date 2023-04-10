@@ -5,13 +5,14 @@
 using namespace std;
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        std::cout << "you must provide one arguments: config_path" << std::endl;
-        std::cout << "Usage: ./cli_client ./src/server_config.txt" << std::endl;
+    if (argc != 3) {
+        std::cout << "you must provide one arguments: config_path assigned_port" << std::endl;
+        std::cout << "Usage: ./cli_client ./src/server_config.txt 0.0.0.0:50001" << std::endl;
         return 0;
     }
     string config_path = argv[1];
-    KeyValueStoreClient kv(config_path);
+    string assigned_port = argv[2];
+    KeyValueStoreClient kv(config_path, assigned_port);
 
     std::string input;
     std::string key, value, result;

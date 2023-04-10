@@ -73,6 +73,12 @@ void KVRaftServer::server_loop() {
         auto election_duration_ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(cur_time - election_timer);
         if (identity == Role::LEADER) {
+            if (TEST_RECOVERY) {
+                if (logs.getMaxIndex() == SERVER_CRASH_AFTER_N_LOGS && name == SHUT_DOWN_SERVER){
+                    std::cout << RED << "TEST RECOVERY trigger exit after recording " << SERVER_CRASH_AFTER_N_LOGS << " logs." << RESET << std::endl;
+                    exit(0);
+                }
+            }
             if (heartbeat_duration_ms > 500ms) {
                 send_append_entries(true);
                 prev_heartbeat = cur_time;

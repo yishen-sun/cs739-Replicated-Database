@@ -63,3 +63,71 @@ Get operation completed 1000 iterations in 7992472 microseconds
 
 Put operation completed 1000 iterations in 7985488 microseconds
 Get operation completed 1000 iterations in 7984439 microseconds
+
+Redis 1000 100 100 - Monday
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1343.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 7877635 microseconds
+Get operation completed 1000 kv pairs in 7568884 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1310.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 8000245 microseconds
+Get operation completed 1000 kv pairs in 8008978 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1343.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 7579997 microseconds
+Get operation completed 1000 kv pairs in 7766264 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1343.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 7989318 microseconds
+Get operation completed 1000 kv pairs in 8059372 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1310.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 7902486 microseconds
+Get operation completed 1000 kv pairs in 7776091 microseconds
+
+Basic 1000 100 100 - Monday
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1310.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 9710234 microseconds
+Get operation completed 1000 kv pairs in 7699723 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 9424295 microseconds
+Get operation completed 1000 kv pairs in 7735457 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1310.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 9421190 microseconds
+Get operation completed 1000 kv pairs in 7442192 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1310.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 9281642 microseconds
+Get operation completed 1000 kv pairs in 7643895 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1343.utah.cloudlab.us:50001 1000 100 100
+Put operation completed:1000 kv pairs in 9408756 microseconds
+Get operation completed 1000 kv pairs in 7556408 microseconds
+
+Basic 10000 100 100
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 232407543 microseconds
+Get operation completed 10000 kv pairs in 74141409 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1343.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 222314321 microseconds
+Get operation completed 10000 kv pairs in 73863126 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 226594432 microseconds
+Get operation completed 10000 kv pairs in 75180224 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 223464231 microseconds
+Get operation completed 10000 kv pairs in 74804998 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 225844548 microseconds
+Get operation completed 10000 kv pairs in 76369512 microseconds
+
+Redis 10000 100 100
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1343.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 81085945 microseconds
+Get operation completed 10000 kv pairs in 80755604 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1343.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 79544006 microseconds
+Get operation completed 10000 kv pairs in 80341991 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 80389720 microseconds
+Get operation completed 10000 kv pairs in 79306264 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 78033775 microseconds
+Get operation completed 10000 kv pairs in 76708513 microseconds
+yishen@node0:~/cs739-Replicated-Database$ ./release/throughtput ms1317.utah.cloudlab.us:50001 10000 100 100
+Put operation completed:10000 kv pairs in 79508926 microseconds
+Get operation completed 10000 kv pairs in 79661846 microseconds
